@@ -1,23 +1,23 @@
 import java.io.File;
 import java.util.List;
-import org.checkerframework.checker.templatefora.TemplateforaChecker;
+import org.checkerframework.checker.dependencyinjection.DependencyInjectionChecker;
 import org.checkerframework.framework.test.CheckerFrameworkPerDirectoryTest;
 import org.junit.runners.Parameterized.Parameters;
 
 /**
- * Test runner for tests of the TemplateForA Checker.
+ * Test runner for tests of the Dependency Injection Checker.
  *
- * <p>Tests appear as Java files in the {@code tests/templatefora} folder. To add a new test case,
+ * <p>Tests appear as Java files in the {@code tests/dependencyinjection} folder. To add a new test case,
  * create a Java file in that directory. The file contains "// ::" comments to indicate expected
  * errors and warnings; see
  * https://github.com/typetools/checker-framework/blob/master/checker/tests/README .
  */
-public class TemplateforaTest extends CheckerFrameworkPerDirectoryTest {
-    public TemplateforaTest(List<File> testFiles) {
+public class DependencyInjectionTest extends CheckerFrameworkPerDirectoryTest {
+    public DependencyInjectionTest(List<File> testFiles) {
         super(
                 testFiles,
-                TemplateforaChecker.class,
-                "templatefora",
+                DependencyInjectionChecker.class,
+                "dependencyinjection",
                 "-Anomsgtext",
                 "-Astubs=stubs/",
                 "-nowarn");
@@ -25,6 +25,6 @@ public class TemplateforaTest extends CheckerFrameworkPerDirectoryTest {
 
     @Parameters
     public static String[] getTestDirs() {
-        return new String[] {"templatefora"};
+        return new String[] {"dependencyinjection"};
     }
 }
