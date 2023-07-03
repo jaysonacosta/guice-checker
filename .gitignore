@@ -6,8 +6,14 @@ build
 .idea
 *.iml
 
+# VSCode
+.vscode
+
 # Emacs
 *~
 
 # checker-qual
 dependencyinjection-checker-qual/src
+
+# Binaries
+bin
