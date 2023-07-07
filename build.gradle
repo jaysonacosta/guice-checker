@@ -91,6 +91,8 @@ dependencies {
   // Testing
   testImplementation 'junit:junit:4.13.2'
   testImplementation "org.checkerframework:framework-test:${versions.checkerFramework}"
+  testImplementation group: 'com.google.inject', name: 'guice', version: '7.0.0'
+  testImplementation group: 'javax.inject', name: 'javax.inject', version: '1'
 
   errorproneJavac "com.google.errorprone:javac:9+181-r4173-1"
 }
@@ -146,6 +148,7 @@ test {
     ]
     jvmArgs += compilerArgsForRunningCF
   }
+
   testLogging {
     showStandardStreams = true
     // Show the found unexpected diagnostics and expected diagnostics not found.
