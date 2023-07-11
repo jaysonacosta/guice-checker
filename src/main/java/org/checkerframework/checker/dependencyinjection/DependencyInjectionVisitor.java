@@ -8,4 +8,9 @@ public class DependencyInjectionVisitor extends ValueVisitor {
   public DependencyInjectionVisitor(BaseTypeChecker c) {
     super(c);
   }
+
+  @Override
+  protected DependencyInjectionAnnotatedTypeFactory createTypeFactory() {
+    return new DependencyInjectionAnnotatedTypeFactory(this.checker);
+  }
 }
