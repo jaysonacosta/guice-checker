@@ -119,6 +119,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends ClassValAnnotatedTy
                       AnnotatedTypeMirror boundClassTypeMirror =
                           this.getAnnotatedType(methodArgumentNode.getTree());
 
+                      // TODO: getAnnotation may possibly return annotations that aren't @ClassVal
                       List<String> classNames =
                           AnnotationUtils.getElementValueArray(
                               boundClassTypeMirror.getAnnotation(),
@@ -139,6 +140,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends ClassValAnnotatedTy
                           this.getAnnotatedType(
                               receiver.getOperands().toArray(new Node[2])[1].getTree());
 
+                      // TODO: getAnnotation may possibly return annotations that aren't @ClassVal
                       List<String> boundClassNames =
                           AnnotationUtils.getElementValueArray(
                               boundClassTypeMirror.getAnnotation(),
