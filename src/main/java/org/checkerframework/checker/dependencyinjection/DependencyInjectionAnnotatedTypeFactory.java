@@ -26,6 +26,7 @@ import org.checkerframework.javacutil.TreeUtils;
 
 public class DependencyInjectionAnnotatedTypeFactory extends ClassValAnnotatedTypeFactory {
 
+  // TODO: Not a good idea to use this logger
   Logger logger = Logger.getLogger(DependencyInjectionAnnotatedTypeFactory.class.getName());
 
   /** The {@code com.google.inject.AbstractModule.bind(Class<Baz> clazz)} method */
