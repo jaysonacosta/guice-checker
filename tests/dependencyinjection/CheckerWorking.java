@@ -9,7 +9,7 @@ import javax.inject.Inject;
 import javax.inject.Qualifier;
 import org.checkerframework.common.value.qual.*;
 
-public class GuiceDemo {
+public class CheckerWorking {
   @Qualifier @Retention(RUNTIME)
   @interface Message {}
 
