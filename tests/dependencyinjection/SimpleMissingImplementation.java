@@ -3,7 +3,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import org.checkerframework.common.value.qual.*;
 
-public class MissingImplementation {
+public class SimpleMissingImplementation {
 
   /** Guice module that provides bindings for message and count used in {@link Greeter}. */
   static class DemoModule extends AbstractModule {
@@ -29,9 +29,9 @@ public class MissingImplementation {
      * instance. Most applications will call this method exactly once, in their
      * main() method.
      */
-    Injector injector = Guice.createInjector();
+    Injector injector = Guice.createInjector(new DemoModule());
 
     // :: error: missing.implementation
-    Greeter greeter = injector.getInstance(Baz.class);
+    Baz baz = injector.getInstance(Baz.class);
   }
 }
