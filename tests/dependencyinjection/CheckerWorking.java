@@ -1,5 +1,3 @@
-package dependencyinjection;
-
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import com.google.inject.AbstractModule;
@@ -9,22 +7,16 @@ import com.google.inject.Provides;
 import java.lang.annotation.Retention;
 import javax.inject.Inject;
 import javax.inject.Qualifier;
-
 import org.checkerframework.common.value.qual.*;
 
 public class GuiceDemo {
-  @Qualifier
-  @Retention(RUNTIME)
+  @Qualifier @Retention(RUNTIME)
   @interface Message {}
 
-  @Qualifier
-  @Retention(RUNTIME)
+  @Qualifier @Retention(RUNTIME)
   @interface Count {}
 
-  /**
-   * Guice module that provides bindings for message and count used in
-   * {@link Greeter}.
-   */
+  /** Guice module that provides bindings for message and count used in {@link Greeter}. */
   static class DemoModule extends AbstractModule {
     @Provides
     @Count
@@ -54,7 +46,7 @@ public class GuiceDemo {
     }
 
     void sayHello() {
-      for (int i=0; i < count; i++) {
+      for (int i = 0; i < count; i++) {
         System.out.println(message);
       }
     }
@@ -80,6 +72,5 @@ public class GuiceDemo {
 
     // :: error: assignment
     @BoolVal(true) boolean x = false;
-
   }
 }
