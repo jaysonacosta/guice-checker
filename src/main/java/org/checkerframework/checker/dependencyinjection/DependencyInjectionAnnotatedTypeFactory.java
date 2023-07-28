@@ -8,25 +8,35 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.reflection.ClassValAnnotatedTypeFactory;
+import org.checkerframework.common.reflection.qual.ClassVal;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.block.Block;
 import org.checkerframework.dataflow.cfg.node.MethodAccessNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
+import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 
 public class DependencyInjectionAnnotatedTypeFactory extends ClassValAnnotatedTypeFactory {
+
+  Logger logger = Logger.getLogger(DependencyInjectionAnnotatedTypeFactory.class.getName());
 
   /** The {@code com.google.inject.AbstractModule.bind(Class<Baz> clazz)} method */
   private final List<ExecutableElement> bindMethods = new ArrayList<>(3);
 
   /** The {@code com.google.inject.binder.LinkedBindingBuilder.to(Class<? extends Baz> method */
   private final List<ExecutableElement> toMethods = new ArrayList<>(3);
+
+  /** The ClassVal.value argument/element. */
+  public final ExecutableElement classValValueElement =
+      TreeUtils.getMethod(ClassVal.class, "value", 0, processingEnv);
 
   public DependencyInjectionAnnotatedTypeFactory(BaseTypeChecker c) {
     super(c);
@@ -82,11 +92,9 @@ public class DependencyInjectionAnnotatedTypeFactory extends ClassValAnnotatedTy
   @Override
   protected void postAnalyze(ControlFlowGraph cfg) {
 
-    System.out.println("--------------------");
-
     Set<Block> visited = new HashSet<>();
     Deque<Block> worklist = new ArrayDeque<>();
-    HashMap<Integer, Integer> knownBindings = new HashMap<>();
+    HashMap<String, String> knownBindings = new HashMap<>();
 
     Block entry = cfg.getEntryBlock();
     worklist.add(entry);
@@ -102,19 +110,26 @@ public class DependencyInjectionAnnotatedTypeFactory extends ClassValAnnotatedTy
                 if (node instanceof MethodInvocationNode) {
                   MethodInvocationNode methodInvocationNode = (MethodInvocationNode) node;
 
-                  System.out.printf("Method Invocation: %s\n", methodInvocationNode);
-                  System.out.printf("Operands: %s\n\n", methodInvocationNode.getOperands());
-
                   if (methodInvocationNode.getOperands().size() >= 2) {
                     MethodAccessNode methodAccessNode = methodInvocationNode.getTarget();
-                    Node fieldAccessNode = methodInvocationNode.getArgument(0);
+                    Node methodArgumentNode = methodInvocationNode.getArgument(0);
 
                     if (isBindMethod(methodInvocationNode.getTree())) {
                       // Class that is being bound - put in knownBindings
                       AnnotatedTypeMirror boundClassTypeMirror =
-                          this.getAnnotatedType(fieldAccessNode.getTree());
+                          this.getAnnotatedType(methodArgumentNode.getTree());
 
-                      knownBindings.put(boundClassTypeMirror.getUnderlyingTypeHashCode(), null);
+                      List<String> classNames =
+                          AnnotationUtils.getElementValueArray(
+                              boundClassTypeMirror.getAnnotation(),
+                              classValValueElement,
+                              String.class);
+
+                      classNames.forEach(
+                          className -> {
+                            knownBindings.put(className, null);
+                          });
+
                     } else if (isToMethod(methodInvocationNode.getTree())) {
                       Node receiver = methodAccessNode.getReceiver();
 
@@ -124,16 +139,32 @@ public class DependencyInjectionAnnotatedTypeFactory extends ClassValAnnotatedTy
                           this.getAnnotatedType(
                               receiver.getOperands().toArray(new Node[2])[1].getTree());
 
-                      if (knownBindings.containsKey(
-                          boundClassTypeMirror.getUnderlyingTypeHashCode())) {
-                        knownBindings.remove(boundClassTypeMirror.getUnderlyingTypeHashCode());
-                        // Class that is being bound to - put in knownBindings <bound, boundTo>
-                        AnnotatedTypeMirror boundToClassTypeMirror =
-                            this.getAnnotatedType(fieldAccessNode.getTree());
-                        knownBindings.put(
-                            boundClassTypeMirror.getUnderlyingTypeHashCode(),
-                            boundToClassTypeMirror.getUnderlyingTypeHashCode());
-                      }
+                      List<String> boundClassNames =
+                          AnnotationUtils.getElementValueArray(
+                              boundClassTypeMirror.getAnnotation(),
+                              classValValueElement,
+                              String.class);
+
+                      boundClassNames.forEach(
+                          boundClassName -> {
+                            if (knownBindings.containsKey(boundClassName)) {
+                              knownBindings.remove(boundClassName);
+                              // Class that is being bound to - put in knownBindings <bound,boundTo>
+                              AnnotatedTypeMirror boundToClassTypeMirror =
+                                  this.getAnnotatedType(methodArgumentNode.getTree());
+
+                              List<String> boundToClassNames =
+                                  AnnotationUtils.getElementValueArray(
+                                      boundToClassTypeMirror.getAnnotation(),
+                                      classValValueElement,
+                                      String.class);
+
+                              boundToClassNames.forEach(
+                                  boundToClassName -> {
+                                    knownBindings.put(boundClassName, boundToClassName);
+                                  });
+                            }
+                          });
                     }
                   }
                 }
@@ -147,16 +178,11 @@ public class DependencyInjectionAnnotatedTypeFactory extends ClassValAnnotatedTy
                   worklist.add(block);
                 }
               });
-
-      System.out.println("Worklist");
-      worklist.forEach(block -> System.out.printf("Block: %s\n", block));
-      System.out.println("Visited");
-      visited.forEach(block -> System.out.printf("Block: %s\n", block));
     }
 
     knownBindings.forEach(
         (key, value) -> {
-          System.out.printf("Key: %d, Value: %d\n", key, value);
+          logger.log(Level.INFO, String.format("<Key: %s, Value: %s>\n", key, value));
         });
 
     super.postAnalyze(cfg);
