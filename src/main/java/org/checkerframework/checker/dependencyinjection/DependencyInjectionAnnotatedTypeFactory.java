@@ -88,12 +88,12 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
    * @param methodTree the method invocation tree
    * @return true iff the argument is an invocation of AbstractModule.bind()
    */
-  private boolean isBindMethod(Tree methodTree) {
+  protected boolean isBindMethod(Tree methodTree) {
     return TreeUtils.isMethodInvocation(methodTree, this.bindMethods, this.getProcessingEnv());
   }
 
   /* Returns true iff the argument is an invocation of AbstractModule.to() */
-  private boolean isToMethod(Tree methodTree) {
+  protected boolean isToMethod(Tree methodTree) {
     return TreeUtils.isMethodInvocation(methodTree, this.toMethods, this.getProcessingEnv());
   }
 
