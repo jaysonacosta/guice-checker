@@ -8,12 +8,16 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
+import org.checkerframework.checker.dependencyinjection.qual.Bind;
+import org.checkerframework.checker.dependencyinjection.qual.BindBottom;
+import org.checkerframework.checker.dependencyinjection.qual.BindPredicate;
+import org.checkerframework.common.accumulation.AccumulationAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.reflection.ClassValAnnotatedTypeFactory;
+import org.checkerframework.common.reflection.ClassValChecker;
 import org.checkerframework.common.reflection.qual.ClassVal;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.block.Block;
@@ -24,10 +28,12 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 
-public class DependencyInjectionAnnotatedTypeFactory extends ClassValAnnotatedTypeFactory {
+public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotatedTypeFactory {
 
   // TODO: Not a good idea to use this logger
   Logger logger = Logger.getLogger(DependencyInjectionAnnotatedTypeFactory.class.getName());
+
+  ClassValAnnotatedTypeFactory classValATF = getTypeFactoryOfSubchecker(ClassValChecker.class);
 
   /** The {@code com.google.inject.AbstractModule.bind(Class<Baz> clazz)} method */
   private final List<ExecutableElement> bindMethods = new ArrayList<>(3);
@@ -40,7 +46,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends ClassValAnnotatedTy
       TreeUtils.getMethod(ClassVal.class, "value", 0, processingEnv);
 
   public DependencyInjectionAnnotatedTypeFactory(BaseTypeChecker c) {
-    super(c);
+    super(c, Bind.class, BindBottom.class, BindPredicate.class);
     ProcessingEnvironment processingEnv = this.getProcessingEnv();
     this.bindMethods.add(
         TreeUtils.getMethod(
@@ -73,7 +79,8 @@ public class DependencyInjectionAnnotatedTypeFactory extends ClassValAnnotatedTy
             "to",
             processingEnv,
             "com.google.inject.Key<? extends T>"));
-    super.postInit();
+
+    this.postInit();
   }
 
   /* Returns true iff the argument is an invocation of AbstractModule.bind.
@@ -92,7 +99,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends ClassValAnnotatedTy
 
   @Override
   protected void postAnalyze(ControlFlowGraph cfg) {
-
+    System.out.println("---\n");
     Set<Block> visited = new HashSet<>();
     Deque<Block> worklist = new ArrayDeque<>();
     HashMap<String, String> knownBindings = new HashMap<>();
@@ -111,6 +118,9 @@ public class DependencyInjectionAnnotatedTypeFactory extends ClassValAnnotatedTy
                 if (node instanceof MethodInvocationNode) {
                   MethodInvocationNode methodInvocationNode = (MethodInvocationNode) node;
 
+                  // System.out.printf(
+                  //     "Method invocation node: %s\n", methodInvocationNode.getTree().toString());
+
                   if (methodInvocationNode.getOperands().size() >= 2) {
                     MethodAccessNode methodAccessNode = methodInvocationNode.getTarget();
                     Node methodArgumentNode = methodInvocationNode.getArgument(0);
@@ -118,8 +128,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends ClassValAnnotatedTy
                     if (isBindMethod(methodInvocationNode.getTree())) {
                       // Class that is being bound - put in knownBindings
                       AnnotatedTypeMirror boundClassTypeMirror =
-                          this.getAnnotatedType(methodArgumentNode.getTree());
-
+                          classValATF.getAnnotatedType(methodArgumentNode.getTree());
                       // TODO: getAnnotation may possibly return annotations that aren't @ClassVal
                       List<String> classNames =
                           AnnotationUtils.getElementValueArray(
@@ -138,7 +147,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends ClassValAnnotatedTy
                       // TODO: This feels a little hacky to get the bound class type mirror
                       // Class that is being bound - should be in knownBindings
                       AnnotatedTypeMirror boundClassTypeMirror =
-                          this.getAnnotatedType(
+                          classValATF.getAnnotatedType(
                               receiver.getOperands().toArray(new Node[2])[1].getTree());
 
                       // TODO: getAnnotation may possibly return annotations that aren't @ClassVal
@@ -154,7 +163,11 @@ public class DependencyInjectionAnnotatedTypeFactory extends ClassValAnnotatedTy
                               knownBindings.remove(boundClassName);
                               // Class that is being bound to - put in knownBindings <bound,boundTo>
                               AnnotatedTypeMirror boundToClassTypeMirror =
-                                  this.getAnnotatedType(methodArgumentNode.getTree());
+                                  classValATF.getAnnotatedType(methodArgumentNode.getTree());
+
+                              System.out.printf(
+                                  "Bound to class type mirror: %s\n",
+                                  boundToClassTypeMirror.toString());
 
                               List<String> boundToClassNames =
                                   AnnotationUtils.getElementValueArray(
@@ -164,6 +177,8 @@ public class DependencyInjectionAnnotatedTypeFactory extends ClassValAnnotatedTy
 
                               boundToClassNames.forEach(
                                   boundToClassName -> {
+                                    System.out.printf(
+                                        "Bound to class name: %s\n", boundToClassName);
                                     knownBindings.put(boundClassName, boundToClassName);
                                   });
                             }
@@ -183,10 +198,13 @@ public class DependencyInjectionAnnotatedTypeFactory extends ClassValAnnotatedTy
               });
     }
 
+    System.out.println("Known Bindings:");
     knownBindings.forEach(
         (key, value) -> {
-          logger.log(Level.INFO, String.format("<Key: %s, Value: %s>\n", key, value));
+          System.out.print(String.format("<Key: %s, Value: %s>\n", key, value));
         });
+
+    System.out.println();
 
     super.postAnalyze(cfg);
   }
