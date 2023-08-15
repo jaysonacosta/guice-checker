@@ -37,6 +37,8 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
   ClassValAnnotatedTypeFactory classValATF = getTypeFactoryOfSubchecker(ClassValChecker.class);
 
+  HashMap<String, String> knownBindings = new HashMap<>();
+
   /** The {@code com.google.inject.AbstractModule.bind(Class<Baz> clazz)} method */
   private final List<ExecutableElement> bindMethods = new ArrayList<>(3);
 
@@ -107,7 +109,6 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   protected void postAnalyze(ControlFlowGraph cfg) {
     Set<Block> visited = new HashSet<>();
     Deque<Block> worklist = new ArrayDeque<>();
-    HashMap<String, String> knownBindings = new HashMap<>();
 
     Block entry = cfg.getEntryBlock();
     worklist.add(entry);
