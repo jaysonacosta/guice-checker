@@ -105,7 +105,6 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
   @Override
   protected void postAnalyze(ControlFlowGraph cfg) {
-    System.out.println("---\n");
     Set<Block> visited = new HashSet<>();
     Deque<Block> worklist = new ArrayDeque<>();
     HashMap<String, String> knownBindings = new HashMap<>();
@@ -121,7 +120,6 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
           .getNodes()
           .forEach(
               node -> {
-                System.out.println(String.format("Node: %s", node.toString()));
                 if (node instanceof MethodInvocationNode) {
                   MethodInvocationNode methodInvocationNode = (MethodInvocationNode) node;
 
@@ -165,9 +163,6 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
                       }
 
                       if (bindAnno != null) {
-                        System.out.println();
-                        System.out.printf("Type Mirror: %s\n", bindAnno);
-
                         List<String> boundClassNames =
                             AnnotationUtils.getElementValueArray(
                                 bindAnno, bindValValueElement, String.class);
@@ -181,10 +176,6 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
                                 AnnotatedTypeMirror boundToClassTypeMirror =
                                     classValATF.getAnnotatedType(methodArgumentNode.getTree());
 
-                                System.out.printf(
-                                    "Bound to class type mirror: %s\n",
-                                    boundToClassTypeMirror.toString());
-
                                 List<String> boundToClassNames =
                                     AnnotationUtils.getElementValueArray(
                                         boundToClassTypeMirror.getAnnotation(),
@@ -193,8 +184,6 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
                                 boundToClassNames.forEach(
                                     boundToClassName -> {
-                                      System.out.printf(
-                                          "Bound to class name: %s\n", boundToClassName);
                                       knownBindings.put(boundClassName, boundToClassName);
                                     });
                               }
