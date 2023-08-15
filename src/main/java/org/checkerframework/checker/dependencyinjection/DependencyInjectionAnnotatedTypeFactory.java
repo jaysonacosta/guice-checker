@@ -37,7 +37,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
   ClassValAnnotatedTypeFactory classValATF = getTypeFactoryOfSubchecker(ClassValChecker.class);
 
-  HashMap<String, String> knownBindings = new HashMap<>();
+  static HashMap<String, String> knownBindings = new HashMap<>();
 
   /** The {@code com.google.inject.AbstractModule.bind(Class<Baz> clazz)} method */
   private final List<ExecutableElement> bindMethods = new ArrayList<>(3);
@@ -142,7 +142,8 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
                       classNames.forEach(
                           className -> {
-                            knownBindings.put(className, null);
+                            DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
+                                className, null);
                           });
 
                     } else if (isToMethod(methodInvocationNode.getTree())) {
@@ -170,8 +171,10 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
                         boundClassNames.forEach(
                             boundClassName -> {
-                              if (knownBindings.containsKey(boundClassName)) {
-                                knownBindings.remove(boundClassName);
+                              if (DependencyInjectionAnnotatedTypeFactory.knownBindings.containsKey(
+                                  boundClassName)) {
+                                DependencyInjectionAnnotatedTypeFactory.knownBindings.remove(
+                                    boundClassName);
                                 // Class that is being bound to - put in knownBindings
                                 // <bound,boundTo>
                                 AnnotatedTypeMirror boundToClassTypeMirror =
@@ -185,7 +188,8 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
                                 boundToClassNames.forEach(
                                     boundToClassName -> {
-                                      knownBindings.put(boundClassName, boundToClassName);
+                                      DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
+                                          boundClassName, boundToClassName);
                                     });
                               }
                             });
@@ -207,7 +211,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
     }
 
     System.out.println("Known Bindings:");
-    knownBindings.forEach(
+    DependencyInjectionAnnotatedTypeFactory.knownBindings.forEach(
         (key, value) -> {
           System.out.print(String.format("<Key: %s, Value: %s>\n", key, value));
         });
