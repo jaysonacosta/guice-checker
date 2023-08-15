@@ -5,8 +5,10 @@ import org.checkerframework.common.accumulation.AccumulationChecker;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.common.reflection.ClassValChecker;
+import org.checkerframework.framework.qual.StubFiles;
 
 /** This is the entry point for pluggable type-checking. */
+@StubFiles({"Guice.astub"})
 public class DependencyInjectionChecker extends AccumulationChecker {
 
   public DependencyInjectionChecker() {}
