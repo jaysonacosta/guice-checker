@@ -205,6 +205,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
                 }
               });
 
+      visited.add(current);
       current
           .getSuccessors()
           .forEach(
