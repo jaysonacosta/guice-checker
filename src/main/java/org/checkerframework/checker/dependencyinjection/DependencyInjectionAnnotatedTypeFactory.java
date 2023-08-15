@@ -13,7 +13,6 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
 import org.checkerframework.checker.dependencyinjection.qual.Bind;
 import org.checkerframework.checker.dependencyinjection.qual.BindBottom;
-import org.checkerframework.checker.dependencyinjection.qual.BindPredicate;
 import org.checkerframework.common.accumulation.AccumulationAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.reflection.ClassValAnnotatedTypeFactory;
@@ -45,8 +44,12 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   public final ExecutableElement classValValueElement =
       TreeUtils.getMethod(ClassVal.class, "value", 0, processingEnv);
 
+  /** The Bind.value argument/element. */
+  public final ExecutableElement bindValValueElement =
+      TreeUtils.getMethod(Bind.class, "value", 0, processingEnv);
+
   public DependencyInjectionAnnotatedTypeFactory(BaseTypeChecker c) {
-    super(c, Bind.class, BindBottom.class, BindPredicate.class);
+    super(c, Bind.class, BindBottom.class);
     ProcessingEnvironment processingEnv = this.getProcessingEnv();
     this.bindMethods.add(
         TreeUtils.getMethod(
@@ -115,11 +118,15 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
           .getNodes()
           .forEach(
               node -> {
+                System.out.printf("Node: %s\n", node.toString());
+                if (node.getTree() != null) {
+                  System.out.printf(
+                      "\tTree: %s\n", this.getAnnotatedType(node.getTree()).getAnnotation());
+                  System.out.printf("\tnode type: %s\n\n", node.getType());
+                }
+
                 if (node instanceof MethodInvocationNode) {
                   MethodInvocationNode methodInvocationNode = (MethodInvocationNode) node;
-
-                  // System.out.printf(
-                  //     "Method invocation node: %s\n", methodInvocationNode.getTree().toString());
 
                   if (methodInvocationNode.getOperands().size() >= 2) {
                     MethodAccessNode methodAccessNode = methodInvocationNode.getTarget();
@@ -129,6 +136,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
                       // Class that is being bound - put in knownBindings
                       AnnotatedTypeMirror boundClassTypeMirror =
                           classValATF.getAnnotatedType(methodArgumentNode.getTree());
+
                       // TODO: getAnnotation may possibly return annotations that aren't @ClassVal
                       List<String> classNames =
                           AnnotationUtils.getElementValueArray(
@@ -144,45 +152,51 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
                     } else if (isToMethod(methodInvocationNode.getTree())) {
                       Node receiver = methodAccessNode.getReceiver();
 
-                      // TODO: This feels a little hacky to get the bound class type mirror
                       // Class that is being bound - should be in knownBindings
                       AnnotatedTypeMirror boundClassTypeMirror =
-                          classValATF.getAnnotatedType(
-                              receiver.getOperands().toArray(new Node[2])[1].getTree());
+                          this.getAnnotatedType(receiver.getTree());
+
+                      System.out.println();
+                      System.out.printf("Type Mirror: %s\n", boundClassTypeMirror);
 
                       // TODO: getAnnotation may possibly return annotations that aren't @ClassVal
                       List<String> boundClassNames =
                           AnnotationUtils.getElementValueArray(
                               boundClassTypeMirror.getAnnotation(),
-                              classValValueElement,
+                              bindValValueElement,
                               String.class);
 
+                      System.out.println(boundClassNames.size());
                       boundClassNames.forEach(
-                          boundClassName -> {
-                            if (knownBindings.containsKey(boundClassName)) {
-                              knownBindings.remove(boundClassName);
-                              // Class that is being bound to - put in knownBindings <bound,boundTo>
-                              AnnotatedTypeMirror boundToClassTypeMirror =
-                                  classValATF.getAnnotatedType(methodArgumentNode.getTree());
+                          val -> System.out.printf("Bound class name: %s\n", val));
 
-                              System.out.printf(
-                                  "Bound to class type mirror: %s\n",
-                                  boundToClassTypeMirror.toString());
+                      // boundClassNames.forEach(
+                      //     boundClassName -> {
+                      //       if (knownBindings.containsKey(boundClassName)) {
+                      //         knownBindings.remove(boundClassName);
+                      //         // Class that is being bound to - put in knownBindings
+                      // <bound,boundTo>
+                      //         AnnotatedTypeMirror boundToClassTypeMirror =
+                      //             classValATF.getAnnotatedType(methodArgumentNode.getTree());
 
-                              List<String> boundToClassNames =
-                                  AnnotationUtils.getElementValueArray(
-                                      boundToClassTypeMirror.getAnnotation(),
-                                      classValValueElement,
-                                      String.class);
+                      //         System.out.printf(
+                      //             "Bound to class type mirror: %s\n",
+                      //             boundToClassTypeMirror.toString());
 
-                              boundToClassNames.forEach(
-                                  boundToClassName -> {
-                                    System.out.printf(
-                                        "Bound to class name: %s\n", boundToClassName);
-                                    knownBindings.put(boundClassName, boundToClassName);
-                                  });
-                            }
-                          });
+                      //         List<String> boundToClassNames =
+                      //             AnnotationUtils.getElementValueArray(
+                      //                 boundToClassTypeMirror.getAnnotation(),
+                      //                 classValValueElement,
+                      //                 String.class);
+
+                      //         boundToClassNames.forEach(
+                      //             boundToClassName -> {
+                      //               System.out.printf(
+                      //                   "Bound to class name: %s\n", boundToClassName);
+                      //               knownBindings.put(boundClassName, boundToClassName);
+                      //             });
+                      //       }
+                      //     });
                     }
                   }
                 }
