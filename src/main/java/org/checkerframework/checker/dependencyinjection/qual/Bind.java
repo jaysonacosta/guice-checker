@@ -17,8 +17,11 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @DefaultQualifierInHierarchy
 public @interface Bind {
   /**
-   * Classes that have definitely been passed as an arugment to {@code bind} on the expression whose
-   * type is annotated.
+   * Classes that have definitely been passed as an arugment to a {@code bind} call whose result is
+   * the expression whose type is annotated. The arguments are "fully qualified binary names"
+   * ({@link org.checkerframework.checker.signature.qual.FqBinaryName}): a primitive or <a
+   * href="https://docs.oracle.com/javase/specs/jls/se17/html/jls-13.html#jls-13.1">binary name</a>,
+   * possibly followed by some number of array brackets.
    *
    * @return classes that have definitely been passed as an arugment to {@code bind}
    */

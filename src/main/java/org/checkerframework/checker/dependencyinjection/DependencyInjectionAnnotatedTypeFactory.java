@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import org.checkerframework.checker.dependencyinjection.qual.Bind;
 import org.checkerframework.checker.dependencyinjection.qual.BindBottom;
@@ -23,6 +24,8 @@ import org.checkerframework.dataflow.cfg.block.Block;
 import org.checkerframework.dataflow.cfg.node.MethodAccessNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
+import org.checkerframework.dataflow.expression.JavaExpression;
+import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
@@ -153,22 +156,31 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
                       Node receiver = methodAccessNode.getReceiver();
 
                       // Class that is being bound - should be in knownBindings
-                      AnnotatedTypeMirror boundClassTypeMirror =
-                          this.getAnnotatedType(receiver.getTree());
+                      CFValue value = this.getStoreBefore(node).getValue(JavaExpression.fromNode(receiver));
+                      AnnotationMirror bindAnno = null;
+                      if (value != null && !value.getAnnotations().isEmpty()) {
+                        for (AnnotationMirror anno : value.getAnnotations()) {
+                          if (AnnotationUtils.areSameByName(anno, "org.checkerframework.checker.dependencyinjection.qual.Bind")) {
+                            bindAnno = anno;
+                            break;
+                          }
+                        }
+                      }
+                      if (bindAnno != null) {
+                        System.out.println();
+                        System.out.printf("Type Mirror: %s\n", bindAnno);
 
-                      System.out.println();
-                      System.out.printf("Type Mirror: %s\n", boundClassTypeMirror);
+                        List<String> boundClassNames =
+                                AnnotationUtils.getElementValueArray(
+                                        bindAnno,
+                                        bindValValueElement,
+                                        String.class);
 
-                      // TODO: getAnnotation may possibly return annotations that aren't @ClassVal
-                      List<String> boundClassNames =
-                          AnnotationUtils.getElementValueArray(
-                              boundClassTypeMirror.getAnnotation(),
-                              bindValValueElement,
-                              String.class);
+                        System.out.println(boundClassNames.size());
+                        boundClassNames.forEach(
+                                val -> System.out.printf("Bound class name: %s\n", val));
+                      }
 
-                      System.out.println(boundClassNames.size());
-                      boundClassNames.forEach(
-                          val -> System.out.printf("Bound class name: %s\n", val));
 
                       // boundClassNames.forEach(
                       //     boundClassName -> {
