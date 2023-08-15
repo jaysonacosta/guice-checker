@@ -1,0 +1,13 @@
+package com.google.inject;
+
+import org.checkerframework.dataflow.qual.*;
+
+class AbstractModule {
+    @Pure
+    protected <T> AnnotatedBindingBuilder<T> bind(java.lang.Class<T> clazz);
+    @Pure
+    protected <T> AnnotatedBindingBuilder<T> bind(TypeLiteral<T> typeLiteral);
+    @Pure
+    protected <T> LinkedBindingBuilder<T> bind(Key<T> key);
+}
+
