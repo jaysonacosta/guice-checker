@@ -105,6 +105,82 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
     return TreeUtils.isMethodInvocation(methodTree, this.toMethods, this.getProcessingEnv());
   }
 
+  /* Invoked when the `MethodInvocationNode` is a call to `com.google.inject.AbstractModule.bind`
+
+  * This method will add the bound class to the `knownBindings` map
+  *
+  * @param methodArgumentNode the argument to the `bind` method
+  */
+  private void handleBindMethodInvocation(Node methodArgumentNode) {
+    // Class that is being bound - put in knownBindings
+    AnnotatedTypeMirror boundClassTypeMirror =
+        classValATF.getAnnotatedType(methodArgumentNode.getTree());
+
+    // TODO: getAnnotation may possibly return annotations that aren't @ClassVal
+    List<String> classNames =
+        AnnotationUtils.getElementValueArray(
+            boundClassTypeMirror.getAnnotation(), classValValueElement, String.class);
+
+    classNames.forEach(
+        className -> {
+          DependencyInjectionAnnotatedTypeFactory.knownBindings.put(className, null);
+        });
+  }
+
+  /* Invoked when the `MethodInvocationNode` is a call to `com.google.inject.binder.LinkedBindingBuilder.to`
+
+  * This method will attempt to find the class that is being bound and add it to the `knownBindings` map
+  * alongside the class that is being bound to
+  *
+  * @param currentNode the current node in the block
+  * @param methodAccessNode the method access node
+  * @param methodArgumentNode the argument to the `to` method
+  */
+  private void handleToMethodInvocation(
+      Node currentNode, MethodAccessNode methodAccessNode, Node methodArgumentNode) {
+    Node receiver = methodAccessNode.getReceiver();
+
+    // Class that is being bound - should be in knownBindings
+    CFValue value = this.getStoreBefore(currentNode).getValue(JavaExpression.fromNode(receiver));
+
+    AnnotationMirror bindAnno = null;
+    if (value != null && !value.getAnnotations().isEmpty()) {
+      for (AnnotationMirror anno : value.getAnnotations()) {
+        if (AnnotationUtils.areSameByName(
+            anno, "org.checkerframework.checker.dependencyinjection.qual.Bind")) {
+          bindAnno = anno;
+          break;
+        }
+      }
+    }
+
+    if (bindAnno != null) {
+      List<String> boundClassNames =
+          AnnotationUtils.getElementValueArray(bindAnno, bindValValueElement, String.class);
+
+      boundClassNames.forEach(
+          boundClassName -> {
+            if (DependencyInjectionAnnotatedTypeFactory.knownBindings.containsKey(boundClassName)) {
+              DependencyInjectionAnnotatedTypeFactory.knownBindings.remove(boundClassName);
+              // Class that is being bound to - put in knownBindings
+              // <bound,boundTo>
+              AnnotatedTypeMirror boundToClassTypeMirror =
+                  classValATF.getAnnotatedType(methodArgumentNode.getTree());
+
+              List<String> boundToClassNames =
+                  AnnotationUtils.getElementValueArray(
+                      boundToClassTypeMirror.getAnnotation(), classValValueElement, String.class);
+
+              boundToClassNames.forEach(
+                  boundToClassName -> {
+                    DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
+                        boundClassName, boundToClassName);
+                  });
+            }
+          });
+    }
+  }
+
   @Override
   protected void postAnalyze(ControlFlowGraph cfg) {
     Set<Block> visited = new HashSet<>();
@@ -129,71 +205,9 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
                     Node methodArgumentNode = methodInvocationNode.getArgument(0);
 
                     if (isBindMethod(methodInvocationNode.getTree())) {
-                      // Class that is being bound - put in knownBindings
-                      AnnotatedTypeMirror boundClassTypeMirror =
-                          classValATF.getAnnotatedType(methodArgumentNode.getTree());
-
-                      // TODO: getAnnotation may possibly return annotations that aren't @ClassVal
-                      List<String> classNames =
-                          AnnotationUtils.getElementValueArray(
-                              boundClassTypeMirror.getAnnotation(),
-                              classValValueElement,
-                              String.class);
-
-                      classNames.forEach(
-                          className -> {
-                            DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
-                                className, null);
-                          });
-
+                      handleBindMethodInvocation(methodArgumentNode);
                     } else if (isToMethod(methodInvocationNode.getTree())) {
-                      Node receiver = methodAccessNode.getReceiver();
-
-                      // Class that is being bound - should be in knownBindings
-                      CFValue value =
-                          this.getStoreBefore(node).getValue(JavaExpression.fromNode(receiver));
-
-                      AnnotationMirror bindAnno = null;
-                      if (value != null && !value.getAnnotations().isEmpty()) {
-                        for (AnnotationMirror anno : value.getAnnotations()) {
-                          if (AnnotationUtils.areSameByName(
-                              anno, "org.checkerframework.checker.dependencyinjection.qual.Bind")) {
-                            bindAnno = anno;
-                            break;
-                          }
-                        }
-                      }
-
-                      if (bindAnno != null) {
-                        List<String> boundClassNames =
-                            AnnotationUtils.getElementValueArray(
-                                bindAnno, bindValValueElement, String.class);
-
-                        boundClassNames.forEach(
-                            boundClassName -> {
-                              if (DependencyInjectionAnnotatedTypeFactory.knownBindings.containsKey(
-                                  boundClassName)) {
-                                DependencyInjectionAnnotatedTypeFactory.knownBindings.remove(
-                                    boundClassName);
-                                // Class that is being bound to - put in knownBindings
-                                // <bound,boundTo>
-                                AnnotatedTypeMirror boundToClassTypeMirror =
-                                    classValATF.getAnnotatedType(methodArgumentNode.getTree());
-
-                                List<String> boundToClassNames =
-                                    AnnotationUtils.getElementValueArray(
-                                        boundToClassTypeMirror.getAnnotation(),
-                                        classValValueElement,
-                                        String.class);
-
-                                boundToClassNames.forEach(
-                                    boundToClassName -> {
-                                      DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
-                                          boundClassName, boundToClassName);
-                                    });
-                              }
-                            });
-                      }
+                      handleToMethodInvocation(node, methodAccessNode, methodArgumentNode);
                     }
                   }
                 }
