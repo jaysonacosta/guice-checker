@@ -105,6 +105,22 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
     return TreeUtils.isMethodInvocation(methodTree, this.toMethods, this.getProcessingEnv());
   }
 
+  private void handleBindMethodInvocation(Node methodArgumentNode) {
+    // Class that is being bound - put in knownBindings
+    AnnotatedTypeMirror boundClassTypeMirror =
+        classValATF.getAnnotatedType(methodArgumentNode.getTree());
+
+    // TODO: getAnnotation may possibly return annotations that aren't @ClassVal
+    List<String> classNames =
+        AnnotationUtils.getElementValueArray(
+            boundClassTypeMirror.getAnnotation(), classValValueElement, String.class);
+
+    classNames.forEach(
+        className -> {
+          DependencyInjectionAnnotatedTypeFactory.knownBindings.put(className, null);
+        });
+  }
+
   @Override
   protected void postAnalyze(ControlFlowGraph cfg) {
     Set<Block> visited = new HashSet<>();
@@ -129,23 +145,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
                     Node methodArgumentNode = methodInvocationNode.getArgument(0);
 
                     if (isBindMethod(methodInvocationNode.getTree())) {
-                      // Class that is being bound - put in knownBindings
-                      AnnotatedTypeMirror boundClassTypeMirror =
-                          classValATF.getAnnotatedType(methodArgumentNode.getTree());
-
-                      // TODO: getAnnotation may possibly return annotations that aren't @ClassVal
-                      List<String> classNames =
-                          AnnotationUtils.getElementValueArray(
-                              boundClassTypeMirror.getAnnotation(),
-                              classValValueElement,
-                              String.class);
-
-                      classNames.forEach(
-                          className -> {
-                            DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
-                                className, null);
-                          });
-
+                      handleBindMethodInvocation(methodArgumentNode);
                     } else if (isToMethod(methodInvocationNode.getTree())) {
                       Node receiver = methodAccessNode.getReceiver();
 
