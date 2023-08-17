@@ -105,6 +105,12 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
     return TreeUtils.isMethodInvocation(methodTree, this.toMethods, this.getProcessingEnv());
   }
 
+  /* Invoked when the `MethodInvocationNode` is a call to `com.google.inject.AbstractModule.bind`
+
+  * This method will add the bound class to the `knownBindings` map
+  *
+  * @param methodArgumentNode the argument to the `bind` method
+  */
   private void handleBindMethodInvocation(Node methodArgumentNode) {
     // Class that is being bound - put in knownBindings
     AnnotatedTypeMirror boundClassTypeMirror =
@@ -121,6 +127,15 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
         });
   }
 
+  /* Invoked when the `MethodInvocationNode` is a call to `com.google.inject.binder.LinkedBindingBuilder.to`
+
+  * This method will attempt to find the class that is being bound and add it to the `knownBindings` map
+  * alongside the class that is being bound to
+  *
+  * @param currentNode the current node in the block
+  * @param methodAccessNode the method access node
+  * @param methodArgumentNode the argument to the `to` method
+  */
   private void handleToMethodInvocation(
       Node currentNode, MethodAccessNode methodAccessNode, Node methodArgumentNode) {
     Node receiver = methodAccessNode.getReceiver();
