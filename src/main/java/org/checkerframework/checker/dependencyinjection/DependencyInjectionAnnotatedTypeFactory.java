@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Logger;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
@@ -31,9 +30,6 @@ import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 
 public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotatedTypeFactory {
-
-  // TODO: Not a good idea to use this logger
-  Logger logger = Logger.getLogger(DependencyInjectionAnnotatedTypeFactory.class.getName());
 
   ClassValAnnotatedTypeFactory classValATF = getTypeFactoryOfSubchecker(ClassValChecker.class);
 
