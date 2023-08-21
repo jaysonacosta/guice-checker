@@ -47,6 +47,11 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   /** The {@code com.google.inject.binder.LinkedBindingBuilder.to(Class<? extends Baz> method */
   private final List<ExecutableElement> toMethods = new ArrayList<>(3);
 
+  /** The {@code com.google.inject.binder.LinkedBindingBuilder.toInstance() method */
+  private final List<ExecutableElement> toInstanceMethods = new ArrayList<>(1);
+
+  private final List<ExecutableElement> annotatedWithMethods = new ArrayList<>(2);
+
   /** The ClassVal.value argument/element. */
   public final ExecutableElement classValValueElement =
       TreeUtils.getMethod(ClassVal.class, "value", 0, processingEnv);
@@ -100,6 +105,23 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
             processingEnv,
             "com.google.inject.Key<? extends T>"));
 
+    this.toInstanceMethods.add(
+        TreeUtils.getMethod(
+            "com.google.inject.binder.LinkedBindingBuilder", "toInstance", processingEnv, "T"));
+
+    this.annotatedWithMethods.add(
+        TreeUtils.getMethod(
+            "com.google.inject.binder.AnnotatedBindingBuilder",
+            "annotatedWith",
+            processingEnv,
+            "java.lang.annotation.Annotation"));
+    this.annotatedWithMethods.add(
+        TreeUtils.getMethod(
+            "com.google.inject.binder.AnnotatedBindingBuilder",
+            "annotatedWith",
+            processingEnv,
+            "java.lang.Class<? extends java.lang.annotation.Annotation>"));
+
     this.postInit();
   }
 
@@ -112,9 +134,21 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
     return TreeUtils.isMethodInvocation(methodTree, this.bindMethods, this.getProcessingEnv());
   }
 
-  /* Returns true iff the argument is an invocation of AbstractModule.to() */
+  /* Returns true iff the argument is an invocation of LinkedBindingBuilder.to() */
   protected boolean isToMethod(Tree methodTree) {
     return TreeUtils.isMethodInvocation(methodTree, this.toMethods, this.getProcessingEnv());
+  }
+
+  /* Returns true iff the argument is an invocation of LinkedBindingBuilder.toInstance() */
+  protected boolean isToInstanceMethod(Tree methodTree) {
+    return TreeUtils.isMethodInvocation(
+        methodTree, this.toInstanceMethods, this.getProcessingEnv());
+  }
+
+  /* Returns true iff the argument is an invocation of AnnotatedBindingBuilder.annotatedWith() */
+  protected boolean isAnnotatedWithMethod(Tree methodTree) {
+    return TreeUtils.isMethodInvocation(
+        methodTree, this.annotatedWithMethods, this.getProcessingEnv());
   }
 
   /* Invoked when the `MethodInvocationNode` is a call to `com.google.inject.AbstractModule.bind`
@@ -195,6 +229,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
   @Override
   protected void postAnalyze(ControlFlowGraph cfg) {
+    System.out.println("--- Post Analyze ---\n");
     Set<Block> visited = new HashSet<>();
     Deque<Block> worklist = new ArrayDeque<>();
 
@@ -217,9 +252,16 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
                     Node methodArgumentNode = methodInvocationNode.getArgument(0);
 
                     if (isBindMethod(methodInvocationNode.getTree())) {
+                      System.out.printf("BindMethod: %s\n\n", methodInvocationNode.getTree());
                       handleBindMethodInvocation(methodArgumentNode);
                     } else if (isToMethod(methodInvocationNode.getTree())) {
+                      System.out.printf("ToMethod: %s\n\n", methodInvocationNode.getTree());
                       handleToMethodInvocation(node, methodAccessNode, methodArgumentNode);
+                    } else if (isAnnotatedWithMethod(methodInvocationNode.getTree())) {
+                      System.out.printf(
+                          "AnnotatedWithMethod: %s\n\n", methodInvocationNode.getTree());
+                    } else if (isToInstanceMethod(methodInvocationNode.getTree())) {
+                      System.out.printf("ToInstanceMethod: %s\n\n", methodInvocationNode.getTree());
                     }
                   }
                 }
