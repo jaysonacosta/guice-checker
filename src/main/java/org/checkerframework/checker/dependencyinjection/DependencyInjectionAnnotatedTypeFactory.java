@@ -1,5 +1,7 @@
 package org.checkerframework.checker.dependencyinjection;
 
+import com.google.inject.Provides;
+import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -25,8 +27,12 @@ import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.framework.flow.CFValue;
+import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
+import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
+import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
 
 public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotatedTypeFactory {
@@ -48,6 +54,16 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   /** The Bind.value argument/element. */
   public final ExecutableElement bindValValueElement =
       TreeUtils.getMethod(Bind.class, "value", 0, processingEnv);
+
+  private void printKnownBindings() {
+    System.out.println("Known Bindings:");
+    DependencyInjectionAnnotatedTypeFactory.knownBindings.forEach(
+        (key, value) -> {
+          System.out.print(String.format("<Key: %s, Value: %s>\n", key, value));
+        });
+
+    System.out.println();
+  }
 
   public DependencyInjectionAnnotatedTypeFactory(BaseTypeChecker c) {
     super(c, Bind.class, BindBottom.class);
@@ -220,14 +236,31 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
               });
     }
 
-    System.out.println("Known Bindings:");
-    DependencyInjectionAnnotatedTypeFactory.knownBindings.forEach(
-        (key, value) -> {
-          System.out.print(String.format("<Key: %s, Value: %s>\n", key, value));
-        });
-
-    System.out.println();
-
     super.postAnalyze(cfg);
+  }
+
+  @Override
+  public TreeAnnotator createTreeAnnotator() {
+    return new ListTreeAnnotator(
+        new DependencyInjectionTreeAnnotator(this), super.createTreeAnnotator());
+  }
+
+  public class DependencyInjectionTreeAnnotator extends TreeAnnotator {
+
+    public DependencyInjectionTreeAnnotator(AnnotatedTypeFactory annotatedTypeFactory) {
+      super(annotatedTypeFactory);
+    }
+
+    @Override
+    public Void visitMethod(MethodTree tree, AnnotatedTypeMirror p) {
+      ExecutableElement element = TreeUtils.elementFromDeclaration(tree);
+      if (ElementUtils.hasAnnotation(element, Provides.class.getName())) {
+        // TODO: Put fully qualified names of classes in knownBindings
+        knownBindings.put(tree.getReturnType().toString(), p.getUnderlyingType().toString());
+      }
+
+      printKnownBindings();
+      return super.visitMethod(tree, p);
+    }
   }
 }
