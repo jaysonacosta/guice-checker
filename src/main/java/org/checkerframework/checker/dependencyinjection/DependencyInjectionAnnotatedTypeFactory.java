@@ -3,8 +3,11 @@ package org.checkerframework.checker.dependencyinjection;
 import com.google.inject.Provides;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
+import java.lang.annotation.Annotation;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,6 +17,7 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import org.checkerframework.checker.dependencyinjection.qual.Bind;
+import org.checkerframework.checker.dependencyinjection.qual.BindAnnotatedWith;
 import org.checkerframework.checker.dependencyinjection.qual.BindBottom;
 import org.checkerframework.common.accumulation.AccumulationAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -29,15 +33,21 @@ import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
+import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
 import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
+import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.org.plumelib.util.CollectionsPlume;
 
 public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotatedTypeFactory {
 
   ClassValAnnotatedTypeFactory classValATF = getTypeFactoryOfSubchecker(ClassValChecker.class);
+
+  /** The annotation for BindAnnotatedWith. */
+  private final Class<? extends Annotation> baw = BindAnnotatedWith.class;
 
   static HashMap<String, String> knownBindings = new HashMap<>();
 
@@ -304,5 +314,19 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
       printKnownBindings();
       return super.visitMethod(tree, p);
     }
+  }
+  public AnnotationMirror createBindAnnotatedWithAnnotation(
+      List<String> values, List<String> names) {
+    AnnotationBuilder builder = new AnnotationBuilder(processingEnv, baw);
+    builder.setValue("value", CollectionsPlume.withoutDuplicatesSorted(values));
+    builder.setValue("annotatedWith", CollectionsPlume.withoutDuplicatesSorted(names));
+    return builder.build();
+  }
+
+  public AnnotationMirror createBindAnnotatedWithAnnotation(String value, String name) {
+    AnnotationBuilder builder = new AnnotationBuilder(processingEnv, baw);
+    builder.setValue("value", Collections.singletonList(value));
+    builder.setValue("annotatedWith", Collections.singletonList(name));
+    return builder.build();
   }
 }
