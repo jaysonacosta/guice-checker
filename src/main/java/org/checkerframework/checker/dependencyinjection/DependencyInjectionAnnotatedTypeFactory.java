@@ -16,6 +16,7 @@ import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import org.checkerframework.checker.dependencyinjection.qual.Bind;
 import org.checkerframework.checker.dependencyinjection.qual.BindAnnotatedWith;
@@ -71,6 +72,14 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   /** The Bind.value argument/element. */
   public final ExecutableElement bindValValueElement =
       TreeUtils.getMethod(Bind.class, "value", 0, processingEnv);
+
+  /** The BindAnnotatedWith.value argument/element. */
+  public final ExecutableElement bawValValueElement =
+      TreeUtils.getMethod(BindAnnotatedWith.class, "value", 0, processingEnv);
+
+  /** The BindAnnotatedWith.annotatedWith argument/element. */
+  public final ExecutableElement bawAnnotatedWithValueElement =
+      TreeUtils.getMethod(BindAnnotatedWith.class, "annotatedWith", 0, processingEnv);
 
   private void printKnownBindings() {
     System.out.println("Known Bindings:");
@@ -239,9 +248,115 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
     }
   }
 
+  /**
+   * Invoked when the {@code MethodInvocationNode} is a call to {@code
+   * com.google.inject.binder.AnnotatedBindingBuilder.annotatedWith}
+   *
+   * @param currentNode the current node in the block
+   * @param methodAccessNode the method access node
+   * @param methodArgumentNode the argument to the{@code annotatedWith} method
+   */
+  private void handleAnnotatedWithMethod(
+      Node currentNode, MethodAccessNode methodAccessNode, Node methodArgumentNode) {
+    Node receiver = methodAccessNode.getReceiver();
+
+    CFValue value = this.getStoreBefore(currentNode).getValue(JavaExpression.fromNode(receiver));
+
+    AnnotationMirror bindAnno = null;
+    if (value != null && !value.getAnnotations().isEmpty()) {
+      for (AnnotationMirror anno : value.getAnnotations()) {
+        if (AnnotationUtils.areSameByName(
+            anno, "org.checkerframework.checker.dependencyinjection.qual.BindAnnotatedWith")) {
+          bindAnno = anno;
+          break;
+        }
+      }
+    }
+
+    // Handle cases where there is a call to annotatedWith
+    if (bindAnno != null) {
+      List<String> boundClassNames =
+          AnnotationUtils.getElementValueArray(bindAnno, bawValValueElement, String.class);
+
+      // TODO: Possibly create a wrapper class for value
+      // List<String> annotatedNames =
+      //     AnnotationUtils.getElementValueArray(
+      //         bindAnno, bawAnnotatedWithValueElement, String.class);
+
+      boundClassNames.forEach(
+          boundClassName -> {
+            if (DependencyInjectionAnnotatedTypeFactory.knownBindings.containsKey(boundClassName)) {
+              DependencyInjectionAnnotatedTypeFactory.knownBindings.remove(boundClassName);
+              // Class that is being bound to - put in knownBindings
+              // <bound,boundTo>
+              TypeMirror boundToClassName = methodArgumentNode.getType();
+
+              DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
+                  boundClassName, boundToClassName.toString());
+            }
+          });
+    }
+  }
+
+  /**
+   * Invoked when the {@code MethodInvocationNode} is a call to {@code
+   * com.google.inject.binder.LinkedBindingBuilder.toInstance}
+   *
+   * <p>This method will attempt to find the class that is being bound and add it to the {@code
+   * knownBindings} map alongside the class that is being bound to
+   *
+   * <p>If the receiver is a call to {@code
+   * com.google.inject.binder.AnnotatedBindingBuilder.annotatedWith}, a call to {@code
+   * handleAnnotatedWithMethod} will be made
+   *
+   * @param currentNode the current node in the block
+   * @param methodAccessNode the method access node
+   * @param methodArgumentNode the argument to the{@code to} method
+   */
+  private void handleToInstanceMethodInvocation(
+      Node currentNode, MethodAccessNode methodAccessNode, Node methodArgumentNode) {
+
+    Node receiver = methodAccessNode.getReceiver();
+
+    if (isAnnotatedWithMethod(receiver.getTree())) {
+      handleAnnotatedWithMethod(currentNode, methodAccessNode, methodArgumentNode);
+    } else if (isBindMethod(receiver.getTree())) {
+      CFValue value = this.getStoreBefore(currentNode).getValue(JavaExpression.fromNode(receiver));
+
+      AnnotationMirror bindAnno = null;
+      if (value != null && !value.getAnnotations().isEmpty()) {
+        for (AnnotationMirror anno : value.getAnnotations()) {
+          if (AnnotationUtils.areSameByName(
+              anno, "org.checkerframework.checker.dependencyinjection.qual.Bind")) {
+            bindAnno = anno;
+            break;
+          }
+        }
+      }
+
+      if (bindAnno != null) {
+        List<String> boundClassNames =
+            AnnotationUtils.getElementValueArray(bindAnno, bindValValueElement, String.class);
+
+        boundClassNames.forEach(
+            boundClassName -> {
+              if (DependencyInjectionAnnotatedTypeFactory.knownBindings.containsKey(
+                  boundClassName)) {
+                DependencyInjectionAnnotatedTypeFactory.knownBindings.remove(boundClassName);
+                // Class that is being bound to - put in knownBindings
+                // <bound,boundTo>
+                TypeMirror boundToClassName = methodArgumentNode.getType();
+
+                DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
+                    boundClassName, boundToClassName.toString());
+              }
+            });
+      }
+    }
+  }
+
   @Override
   protected void postAnalyze(ControlFlowGraph cfg) {
-    System.out.println("--- Post Analyze ---\n");
     Set<Block> visited = new HashSet<>();
     Deque<Block> worklist = new ArrayDeque<>();
 
@@ -264,16 +379,11 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
                     Node methodArgumentNode = methodInvocationNode.getArgument(0);
 
                     if (isBindMethod(methodInvocationNode.getTree())) {
-                      System.out.printf("BindMethod: %s\n\n", methodInvocationNode.getTree());
                       handleBindMethodInvocation(methodArgumentNode);
                     } else if (isToMethod(methodInvocationNode.getTree())) {
-                      System.out.printf("ToMethod: %s\n\n", methodInvocationNode.getTree());
                       handleToMethodInvocation(node, methodAccessNode, methodArgumentNode);
-                    } else if (isAnnotatedWithMethod(methodInvocationNode.getTree())) {
-                      System.out.printf(
-                          "AnnotatedWithMethod: %s\n\n", methodInvocationNode.getTree());
                     } else if (isToInstanceMethod(methodInvocationNode.getTree())) {
-                      System.out.printf("ToInstanceMethod: %s\n\n", methodInvocationNode.getTree());
+                      handleToInstanceMethodInvocation(node, methodAccessNode, methodArgumentNode);
                     }
                   }
                 }
