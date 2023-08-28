@@ -21,6 +21,7 @@ import javax.lang.model.util.Elements;
 import org.checkerframework.checker.dependencyinjection.qual.Bind;
 import org.checkerframework.checker.dependencyinjection.qual.BindAnnotatedWith;
 import org.checkerframework.checker.dependencyinjection.qual.BindBottom;
+import org.checkerframework.checker.dependencyinjection.utils.KnownBindingsValue;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.accumulation.AccumulationAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -52,7 +53,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   /** The annotation for BindAnnotatedWith. */
   private final Class<? extends Annotation> baw = BindAnnotatedWith.class;
 
-  static HashMap<String, String> knownBindings = new HashMap<>();
+  static HashMap<String, KnownBindingsValue> knownBindings = new HashMap<>();
 
   /** The {@code com.google.inject.AbstractModule.bind(Class<Baz> clazz)} method */
   private final List<ExecutableElement> bindMethods = new ArrayList<>(3);
@@ -241,7 +242,8 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
               boundToClassNames.forEach(
                   boundToClassName -> {
                     DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
-                        boundClassName, boundToClassName);
+                        boundClassName,
+                        new KnownBindingsValue.KnownBindingsValueBuilder(boundToClassName).build());
                   });
             }
           });
@@ -279,9 +281,9 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
           AnnotationUtils.getElementValueArray(bindAnno, bawValValueElement, String.class);
 
       // TODO: Possibly create a wrapper class for value
-      // List<String> annotatedNames =
-      //     AnnotationUtils.getElementValueArray(
-      //         bindAnno, bawAnnotatedWithValueElement, String.class);
+      List<String> annotatedNames =
+          AnnotationUtils.getElementValueArray(
+              bindAnno, bawAnnotatedWithValueElement, String.class);
 
       boundClassNames.forEach(
           boundClassName -> {
@@ -291,8 +293,13 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
               // <bound,boundTo>
               TypeMirror boundToClassName = methodArgumentNode.getType();
 
+              KnownBindingsValue knowBindingValue =
+                  new KnownBindingsValue.KnownBindingsValueBuilder(boundToClassName.toString())
+                      .setAnnotationName(annotatedNames.get(0))
+                      .build();
+
               DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
-                  boundClassName, boundToClassName.toString());
+                  boundClassName, knowBindingValue);
             }
           });
     }
@@ -348,7 +355,9 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
                 TypeMirror boundToClassName = methodArgumentNode.getType();
 
                 DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
-                    boundClassName, boundToClassName.toString());
+                    boundClassName,
+                    new KnownBindingsValue.KnownBindingsValueBuilder(boundToClassName.toString())
+                        .build());
               }
             });
       }
@@ -426,7 +435,10 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
       ExecutableElement element = TreeUtils.elementFromDeclaration(tree);
       if (ElementUtils.hasAnnotation(element, Provides.class.getName())) {
         // TODO: Put fully qualified names of classes in knownBindings
-        knownBindings.put(tree.getReturnType().toString(), p.getUnderlyingType().toString());
+        knownBindings.put(
+            tree.getReturnType().toString(),
+            new KnownBindingsValue.KnownBindingsValueBuilder(p.getUnderlyingType().toString())
+                .build());
       }
 
       printKnownBindings();
