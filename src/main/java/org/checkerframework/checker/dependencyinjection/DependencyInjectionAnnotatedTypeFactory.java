@@ -16,9 +16,11 @@ import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.util.Elements;
 import org.checkerframework.checker.dependencyinjection.qual.Bind;
 import org.checkerframework.checker.dependencyinjection.qual.BindAnnotatedWith;
 import org.checkerframework.checker.dependencyinjection.qual.BindBottom;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.accumulation.AccumulationAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.reflection.ClassValAnnotatedTypeFactory;
@@ -299,6 +301,12 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
   public class DependencyInjectionTreeAnnotator extends TreeAnnotator {
 
+    /**
+     * Creates a ElementQualifierHierarchy from the given classes.
+     *
+     * @param qualifierClasses classes of annotations that are the qualifiers for this hierarchy
+     * @param elements element utils
+     */
     public DependencyInjectionTreeAnnotator(AnnotatedTypeFactory annotatedTypeFactory) {
       super(annotatedTypeFactory);
     }
@@ -315,6 +323,75 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
       return super.visitMethod(tree, p);
     }
   }
+
+  @Override
+  protected QualifierHierarchy createQualifierHierarchy() {
+    return new DependencyInjectionQualifierHierarchy(
+        this.getSupportedTypeQualifiers(), this.elements);
+  }
+
+  protected class DependencyInjectionQualifierHierarchy extends AccumulationQualifierHierarchy {
+
+    private final AnnotationMirror bawAnno =
+        AnnotationBuilder.fromClass(elements, BindAnnotatedWith.class);
+
+    protected DependencyInjectionQualifierHierarchy(
+        Collection<Class<? extends Annotation>> qualifierClasses, Elements elements) {
+      super(qualifierClasses, elements);
+    }
+
+    @Override
+    public boolean isSubtype(final AnnotationMirror subAnno, final AnnotationMirror superAnno) {
+
+      if (AnnotationUtils.areSameByName(subAnno, bawAnno)
+          && AnnotationUtils.areSameByName(superAnno, bawAnno)) {
+        if (AnnotationUtils.areSame(subAnno, superAnno)) {
+          return true;
+        }
+        return false;
+      }
+
+      if (AnnotationUtils.areSameByName(subAnno, bawAnno)
+          || AnnotationUtils.areSameByName(superAnno, bawAnno)) {
+        return false;
+      }
+
+      return super.isSubtype(subAnno, superAnno);
+    }
+
+    @Override
+    public @Nullable AnnotationMirror leastUpperBound(
+        final AnnotationMirror qualifier1, final AnnotationMirror qualifier2) {
+
+      if (AnnotationUtils.areSame(qualifier1, qualifier2)) {
+        return qualifier1;
+      }
+
+      if (AnnotationUtils.areSameByName(qualifier1, bawAnno)
+          || AnnotationUtils.areSameByName(qualifier2, bawAnno)) {
+        return top;
+      }
+
+      return super.leastUpperBound(qualifier1, qualifier2);
+    }
+
+    @Override
+    public @Nullable AnnotationMirror greatestLowerBound(
+        AnnotationMirror qualifier1, AnnotationMirror qualifier2) {
+
+      if (AnnotationUtils.areSame(qualifier1, qualifier2)) {
+        return qualifier1;
+      }
+
+      if (AnnotationUtils.areSameByName(qualifier1, bawAnno)
+          || AnnotationUtils.areSameByName(qualifier2, bawAnno)) {
+        return bottom;
+      }
+
+      return super.greatestLowerBound(qualifier1, qualifier2);
+    }
+  }
+
   public AnnotationMirror createBindAnnotatedWithAnnotation(
       List<String> values, List<String> names) {
     AnnotationBuilder builder = new AnnotationBuilder(processingEnv, baw);
