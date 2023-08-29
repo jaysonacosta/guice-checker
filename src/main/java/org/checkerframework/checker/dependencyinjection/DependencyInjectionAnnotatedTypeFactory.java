@@ -277,7 +277,6 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
       List<String> boundClassNames =
           AnnotationUtils.getElementValueArray(bindAnno, bawValValueElement, String.class);
 
-      // TODO: Possibly create a wrapper class for value
       List<String> annotatedNames =
           AnnotationUtils.getElementValueArray(
               bindAnno, bawAnnotatedWithValueElement, String.class);
