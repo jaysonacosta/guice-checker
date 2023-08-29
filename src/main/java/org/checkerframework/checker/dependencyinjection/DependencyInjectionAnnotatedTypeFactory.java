@@ -44,7 +44,6 @@ import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
-import org.checkerframework.org.plumelib.util.CollectionsPlume;
 
 public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotatedTypeFactory {
 
@@ -505,14 +504,6 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
       return super.greatestLowerBound(qualifier1, qualifier2);
     }
-  }
-
-  public AnnotationMirror createBindAnnotatedWithAnnotation(
-      List<String> values, List<String> names) {
-    AnnotationBuilder builder = new AnnotationBuilder(processingEnv, BindAnnotatedWith.class);
-    builder.setValue("value", CollectionsPlume.withoutDuplicatesSorted(values));
-    builder.setValue("annotatedWith", CollectionsPlume.withoutDuplicatesSorted(names));
-    return builder.build();
   }
 
   public AnnotationMirror createBindAnnotatedWithAnnotation(String value, String name) {

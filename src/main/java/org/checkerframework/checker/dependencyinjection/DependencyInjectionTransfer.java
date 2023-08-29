@@ -2,7 +2,6 @@ package org.checkerframework.checker.dependencyinjection;
 
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.Tree;
-import java.util.Arrays;
 import java.util.List;
 import javax.lang.model.element.AnnotationMirror;
 import org.checkerframework.common.accumulation.AccumulationTransfer;
@@ -66,12 +65,10 @@ public class DependencyInjectionTransfer extends AccumulationTransfer {
 
   public void accumulateBindAnnotatedWith(
       Node node, TransferResult<CFValue, CFStore> result, String value, String name) {
-    List<String> valuesAsList = Arrays.asList(value);
-    List<String> namesAsList = Arrays.asList(name);
 
     JavaExpression target = JavaExpression.fromNode(node);
 
-    AnnotationMirror newAnno = diATF.createBindAnnotatedWithAnnotation(valuesAsList, namesAsList);
+    AnnotationMirror newAnno = diATF.createBindAnnotatedWithAnnotation(value, name);
 
     // TODO: insertValue not updating stores, insertValuePermitNondeterministic is
     if (result.containsTwoStores()) {
