@@ -239,7 +239,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
                   boundToClassName -> {
                     DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
                         boundClassName,
-                        new KnownBindingsValue.KnownBindingsValueBuilder(boundToClassName).build());
+                        KnownBindingsValue.builder().className(boundToClassName).build());
                   });
             }
           });
@@ -289,8 +289,9 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
               TypeMirror boundToClassName = methodArgumentNode.getType();
 
               KnownBindingsValue knowBindingValue =
-                  new KnownBindingsValue.KnownBindingsValueBuilder(boundToClassName.toString())
-                      .setAnnotationName(annotatedNames.get(0))
+                  KnownBindingsValue.builder()
+                      .className(boundToClassName.toString())
+                      .annotationName(annotatedNames.get(0))
                       .build();
 
               DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
@@ -351,8 +352,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
                 DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
                     boundClassName,
-                    new KnownBindingsValue.KnownBindingsValueBuilder(boundToClassName.toString())
-                        .build());
+                    KnownBindingsValue.builder().className(boundToClassName.toString()).build());
               }
             });
       }
@@ -432,8 +432,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
         // TODO: Put fully qualified names of classes in knownBindings
         knownBindings.put(
             tree.getReturnType().toString(),
-            new KnownBindingsValue.KnownBindingsValueBuilder(p.getUnderlyingType().toString())
-                .build());
+            KnownBindingsValue.builder().className(p.getUnderlyingType().toString()).build());
       }
 
       printKnownBindings();
