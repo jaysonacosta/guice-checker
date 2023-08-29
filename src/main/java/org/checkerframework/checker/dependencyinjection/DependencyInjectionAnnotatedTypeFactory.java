@@ -451,9 +451,6 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
   protected class DependencyInjectionQualifierHierarchy extends AccumulationQualifierHierarchy {
 
-    private final AnnotationMirror bawAnno =
-        AnnotationBuilder.fromClass(elements, BindAnnotatedWith.class);
-
     protected DependencyInjectionQualifierHierarchy(
         Collection<Class<? extends Annotation>> qualifierClasses, Elements elements) {
       super(qualifierClasses, elements);
@@ -462,16 +459,16 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
     @Override
     public boolean isSubtype(final AnnotationMirror subAnno, final AnnotationMirror superAnno) {
 
-      if (AnnotationUtils.areSameByName(subAnno, bawAnno)
-          && AnnotationUtils.areSameByName(superAnno, bawAnno)) {
+      if (AnnotationUtils.areSameByName(subAnno, BindAnnotatedWith.NAME)
+          && AnnotationUtils.areSameByName(superAnno, BindAnnotatedWith.NAME)) {
         if (AnnotationUtils.areSame(subAnno, superAnno)) {
           return true;
         }
         return false;
       }
 
-      if (AnnotationUtils.areSameByName(subAnno, bawAnno)
-          || AnnotationUtils.areSameByName(superAnno, bawAnno)) {
+      if (AnnotationUtils.areSameByName(subAnno, BindAnnotatedWith.NAME)
+          || AnnotationUtils.areSameByName(superAnno, BindAnnotatedWith.NAME)) {
         return false;
       }
 
@@ -486,8 +483,8 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
         return qualifier1;
       }
 
-      if (AnnotationUtils.areSameByName(qualifier1, bawAnno)
-          || AnnotationUtils.areSameByName(qualifier2, bawAnno)) {
+      if (AnnotationUtils.areSameByName(qualifier1, BindAnnotatedWith.NAME)
+          || AnnotationUtils.areSameByName(qualifier2, BindAnnotatedWith.NAME)) {
         return top;
       }
 
@@ -502,8 +499,8 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
         return qualifier1;
       }
 
-      if (AnnotationUtils.areSameByName(qualifier1, bawAnno)
-          || AnnotationUtils.areSameByName(qualifier2, bawAnno)) {
+      if (AnnotationUtils.areSameByName(qualifier1, BindAnnotatedWith.NAME)
+          || AnnotationUtils.areSameByName(qualifier2, BindAnnotatedWith.NAME)) {
         return bottom;
       }
 
