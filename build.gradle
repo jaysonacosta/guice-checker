@@ -6,6 +6,7 @@ plugins {
   // https://github.com/diffplug/spotless/tags ; see tags starting "gradle/"
   // Only works on JDK 11+ (even including the plugin crashes Gradle on JDK 8).
   id 'com.diffplug.spotless' version '6.18.0'
+  id 'org.checkerframework' version '0.6.32'
 }
 
 repositories {
@@ -76,6 +77,13 @@ spotless {
   }
 }
 
+apply plugin: 'org.checkerframework'
+checkerFramework {
+  checkers = [
+    'org.checkerframework.checker.calledmethods.CalledMethodsChecker',
+  ]
+}
+
 dependencies {
   // This dependency is found on compile classpath of this component and consumers.
   if (checkerframework_local) {
@@ -92,6 +100,10 @@ dependencies {
   // Testing
   testImplementation 'junit:junit:4.13.2'
   testImplementation "org.checkerframework:framework-test:${versions.checkerFramework}"
+
+  compileOnly 'org.projectlombok:lombok:1.18.28'
+  annotationProcessor 'org.projectlombok:lombok:1.18.28'
+
   implementation group: 'com.google.inject', name: 'guice', version: '7.0.0'
   implementation group: 'javax.inject', name: 'javax.inject', version: '1'
 
