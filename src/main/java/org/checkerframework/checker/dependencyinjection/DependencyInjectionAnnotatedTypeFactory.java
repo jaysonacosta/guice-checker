@@ -50,9 +50,6 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
   ClassValAnnotatedTypeFactory classValATF = getTypeFactoryOfSubchecker(ClassValChecker.class);
 
-  /** The annotation for BindAnnotatedWith. */
-  private final Class<? extends Annotation> baw = BindAnnotatedWith.class;
-
   static HashMap<String, KnownBindingsValue> knownBindings = new HashMap<>();
 
   /** The {@code com.google.inject.AbstractModule.bind(Class<Baz> clazz)} method */
@@ -516,14 +513,14 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
   public AnnotationMirror createBindAnnotatedWithAnnotation(
       List<String> values, List<String> names) {
-    AnnotationBuilder builder = new AnnotationBuilder(processingEnv, baw);
+    AnnotationBuilder builder = new AnnotationBuilder(processingEnv, BindAnnotatedWith.class);
     builder.setValue("value", CollectionsPlume.withoutDuplicatesSorted(values));
     builder.setValue("annotatedWith", CollectionsPlume.withoutDuplicatesSorted(names));
     return builder.build();
   }
 
   public AnnotationMirror createBindAnnotatedWithAnnotation(String value, String name) {
-    AnnotationBuilder builder = new AnnotationBuilder(processingEnv, baw);
+    AnnotationBuilder builder = new AnnotationBuilder(processingEnv, BindAnnotatedWith.class);
     builder.setValue("value", Collections.singletonList(value));
     builder.setValue("annotatedWith", Collections.singletonList(name));
     return builder.build();
