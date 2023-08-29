@@ -25,6 +25,9 @@ public @interface BindAnnotatedWith {
    * @return classes that have definitely been passed as an arugment to {@code bind} and names that
    *     have definitely been passed as an argument to {@code annotatedWith}
    */
+  static final String NAME =
+      "org.checkerframework.checker.dependencyinjection.qual.BindAnnotatedWith";
+
   public String[] value() default {};
 
   public String[] annotatedWith() default {};
