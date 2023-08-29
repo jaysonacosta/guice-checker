@@ -68,8 +68,7 @@ public class DependencyInjectionTransfer extends AccumulationTransfer {
       Node node, TransferResult<CFValue, CFStore> result, String value, String name) {
     List<String> valuesAsList = Arrays.asList(value);
     List<String> namesAsList = Arrays.asList(name);
-    // If dataflow has already recorded information about the target, fetch it and integrate
-    // it into the list of values in the new annotation.
+
     JavaExpression target = JavaExpression.fromNode(node);
 
     AnnotationMirror newAnno = diATF.createBindAnnotatedWithAnnotation(valuesAsList, namesAsList);
