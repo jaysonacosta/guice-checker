@@ -16,6 +16,8 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @SubtypeOf({})
 @DefaultQualifierInHierarchy
 public @interface Bind {
+  /** The fully-qualified name of this annotation. */
+  static final String NAME = "org.checkerframework.checker.dependencyinjection.qual.Bind";
   /**
    * Class names that have definitely been passed as an argument to a {@link
    * com.google.inject.Binder#bind()} call.
