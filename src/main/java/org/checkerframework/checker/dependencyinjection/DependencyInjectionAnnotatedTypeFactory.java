@@ -247,58 +247,68 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   }
 
   /**
-   * Invoked when the {@code MethodInvocationNode} is a call to {@code
-   * com.google.inject.binder.AnnotatedBindingBuilder.annotatedWith}
+   * Invoked when the annotation of the receiver to the {@code toInstance} method is {@code
+   * BindAnnotatedWith}
    *
-   * @param currentNode the current node in the block
-   * @param methodAccessNode the method access node
-   * @param methodArgumentNode the argument to the{@code annotatedWith} method
+   * @param bindAnno the {@code BindAnnotatedWith} annotation
+   * @param toInstanceMethodArgumentNode the argument to the {@code toInstance} method
    */
-  private void handleAnnotatedWithMethod(
-      Node currentNode, MethodAccessNode methodAccessNode, Node methodArgumentNode) {
-    Node receiver = methodAccessNode.getReceiver();
+  private void handleBAWAnnotation(AnnotationMirror bindAnno, Node toInstanceMethodArgumentNode) {
 
-    CFValue value = this.getStoreBefore(currentNode).getValue(JavaExpression.fromNode(receiver));
+    List<String> boundClassNames =
+        AnnotationUtils.getElementValueArray(bindAnno, bawValValueElement, String.class);
 
-    AnnotationMirror bindAnno = null;
-    if (value != null && !value.getAnnotations().isEmpty()) {
-      for (AnnotationMirror anno : value.getAnnotations()) {
-        if (AnnotationUtils.areSameByName(
-            anno, "org.checkerframework.checker.dependencyinjection.qual.BindAnnotatedWith")) {
-          bindAnno = anno;
-          break;
-        }
-      }
-    }
+    List<String> annotatedNames =
+        AnnotationUtils.getElementValueArray(bindAnno, bawAnnotatedWithValueElement, String.class);
 
-    // Handle cases where there is a call to annotatedWith
-    if (bindAnno != null) {
-      List<String> boundClassNames =
-          AnnotationUtils.getElementValueArray(bindAnno, bawValValueElement, String.class);
+    System.out.printf("boundClassNames: %s\n", boundClassNames);
+    System.out.printf("annotatedNames: %s\n", annotatedNames);
+    System.out.printf("toInstanceMethodArgumentNode: %s\n", toInstanceMethodArgumentNode);
 
-      List<String> annotatedNames =
-          AnnotationUtils.getElementValueArray(
-              bindAnno, bawAnnotatedWithValueElement, String.class);
+    boundClassNames.forEach(
+        boundClassName -> {
+          if (DependencyInjectionAnnotatedTypeFactory.knownBindings.containsKey(boundClassName)) {
+            DependencyInjectionAnnotatedTypeFactory.knownBindings.remove(boundClassName);
+            // Class that is being bound to - put in knownBindings
+            // <bound,boundTo>
+            TypeMirror boundToClassName = toInstanceMethodArgumentNode.getType();
 
-      boundClassNames.forEach(
-          boundClassName -> {
-            if (DependencyInjectionAnnotatedTypeFactory.knownBindings.containsKey(boundClassName)) {
-              DependencyInjectionAnnotatedTypeFactory.knownBindings.remove(boundClassName);
-              // Class that is being bound to - put in knownBindings
-              // <bound,boundTo>
-              TypeMirror boundToClassName = methodArgumentNode.getType();
+            KnownBindingsValue knowBindingValue =
+                KnownBindingsValue.builder()
+                    .className(boundToClassName.toString())
+                    .annotationName(annotatedNames.get(0))
+                    .build();
 
-              KnownBindingsValue knowBindingValue =
-                  KnownBindingsValue.builder()
-                      .className(boundToClassName.toString())
-                      .annotationName(annotatedNames.get(0))
-                      .build();
+            DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
+                boundClassName, knowBindingValue);
+          }
+        });
+  }
 
-              DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
-                  boundClassName, knowBindingValue);
-            }
-          });
-    }
+  /**
+   * Invoked when the annotation of the receiver to the {@code toInstance} method is {@code Bind}
+   *
+   * @param bindAnno the {@code Bind} annotation
+   * @param toInstanceMethodArgumentNode the argument to the {@code toInstance} method
+   */
+  private void handleBindAnnotation(AnnotationMirror bindAnno, Node toInstanceMethodArgumentNode) {
+
+    List<String> boundClassNames =
+        AnnotationUtils.getElementValueArray(bindAnno, bindValValueElement, String.class);
+
+    boundClassNames.forEach(
+        boundClassName -> {
+          if (DependencyInjectionAnnotatedTypeFactory.knownBindings.containsKey(boundClassName)) {
+            DependencyInjectionAnnotatedTypeFactory.knownBindings.remove(boundClassName);
+            // Class that is being bound to - put in knownBindings
+            // <bound,boundTo>
+            TypeMirror boundToClassName = toInstanceMethodArgumentNode.getType();
+
+            DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
+                boundClassName,
+                KnownBindingsValue.builder().className(boundToClassName.toString()).build());
+          }
+        });
   }
 
   /**
@@ -314,47 +324,27 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
    *
    * @param currentNode the current node in the block
    * @param methodAccessNode the method access node
-   * @param methodArgumentNode the argument to the{@code to} method
+   * @param toInstanceMethodArgumentNode the argument to the{@code to} method
    */
   private void handleToInstanceMethodInvocation(
-      Node currentNode, MethodAccessNode methodAccessNode, Node methodArgumentNode) {
+      Node currentNode, MethodAccessNode methodAccessNode, Node toInstanceMethodArgumentNode) {
+
+    System.out.printf("Current node: %s\n", currentNode);
 
     Node receiver = methodAccessNode.getReceiver();
 
-    if (isAnnotatedWithMethod(receiver.getTree())) {
-      handleAnnotatedWithMethod(currentNode, methodAccessNode, methodArgumentNode);
-    } else if (isBindMethod(receiver.getTree())) {
-      CFValue value = this.getStoreBefore(currentNode).getValue(JavaExpression.fromNode(receiver));
+    CFValue value = this.getStoreBefore(currentNode).getValue(JavaExpression.fromNode(receiver));
+    System.out.printf("Value: %s\n", value);
 
-      AnnotationMirror bindAnno = null;
-      if (value != null && !value.getAnnotations().isEmpty()) {
-        for (AnnotationMirror anno : value.getAnnotations()) {
-          if (AnnotationUtils.areSameByName(
-              anno, "org.checkerframework.checker.dependencyinjection.qual.Bind")) {
-            bindAnno = anno;
-            break;
-          }
-        }
-      }
+    AnnotationMirror receiverAnnotation = null;
 
-      if (bindAnno != null) {
-        List<String> boundClassNames =
-            AnnotationUtils.getElementValueArray(bindAnno, bindValValueElement, String.class);
+    if (value != null && !value.getAnnotations().isEmpty()) {
+      receiverAnnotation = value.getAnnotations().first();
 
-        boundClassNames.forEach(
-            boundClassName -> {
-              if (DependencyInjectionAnnotatedTypeFactory.knownBindings.containsKey(
-                  boundClassName)) {
-                DependencyInjectionAnnotatedTypeFactory.knownBindings.remove(boundClassName);
-                // Class that is being bound to - put in knownBindings
-                // <bound,boundTo>
-                TypeMirror boundToClassName = methodArgumentNode.getType();
-
-                DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
-                    boundClassName,
-                    KnownBindingsValue.builder().className(boundToClassName.toString()).build());
-              }
-            });
+      if (AnnotationUtils.areSameByName(receiverAnnotation, BindAnnotatedWith.NAME)) {
+        handleBAWAnnotation(receiverAnnotation, toInstanceMethodArgumentNode);
+      } else if (AnnotationUtils.areSameByName(receiverAnnotation, Bind.NAME)) {
+        handleBindAnnotation(receiverAnnotation, toInstanceMethodArgumentNode);
       }
     }
   }
@@ -456,16 +446,23 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
     @Override
     public boolean isSubtype(final AnnotationMirror subAnno, final AnnotationMirror superAnno) {
 
-      if (AnnotationUtils.areSameByName(subAnno, BindAnnotatedWith.NAME)
-          && AnnotationUtils.areSameByName(superAnno, BindAnnotatedWith.NAME)) {
-        if (AnnotationUtils.areSame(subAnno, superAnno)) {
+      if (AnnotationUtils.areSame(subAnno, top)) {
+        if (AnnotationUtils.areSame(superAnno, top)) {
           return true;
         }
+
         return false;
       }
 
-      if (AnnotationUtils.areSameByName(subAnno, BindAnnotatedWith.NAME)
-          || AnnotationUtils.areSameByName(superAnno, BindAnnotatedWith.NAME)) {
+      if (AnnotationUtils.areSame(subAnno, superAnno)) {
+        return true;
+      }
+
+      if (AnnotationUtils.areSameByName(subAnno, BindAnnotatedWith.NAME)) {
+        if (AnnotationUtils.areSame(superAnno, top)) {
+          return true;
+        }
+
         return false;
       }
 
