@@ -4,6 +4,7 @@ import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.Tree;
 import java.util.List;
 import javax.lang.model.element.AnnotationMirror;
+import org.checkerframework.checker.dependencyinjection.qual.Bind;
 import org.checkerframework.common.accumulation.AccumulationTransfer;
 import org.checkerframework.common.reflection.ClassValChecker;
 import org.checkerframework.dataflow.analysis.TransferInput;
@@ -17,6 +18,7 @@ import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
 
 public class DependencyInjectionTransfer extends AccumulationTransfer {
@@ -58,14 +60,20 @@ public class DependencyInjectionTransfer extends AccumulationTransfer {
               .getValue(JavaExpression.fromNode(methodInvocationNode.getTarget().getReceiver()));
 
       if (value != null && !value.getAnnotations().isEmpty()) {
-        AnnotationMirror anno = value.getAnnotations().first();
-        List<String> classNames =
-            AnnotationUtils.getElementValueArray(anno, diATF.bindValValueElement, String.class);
-        MethodInvocationNode namesClassNode =
-            (MethodInvocationNode) methodInvocationNode.getArgument(0);
-        StringLiteralNode givenName = (StringLiteralNode) namesClassNode.getArgument(0);
+        AnnotationMirrorSet annotations = value.getAnnotations();
+        annotations.forEach(
+            (annotation) -> {
+              if (AnnotationUtils.areSameByName(annotation, Bind.NAME)) {
+                List<String> classNames =
+                    AnnotationUtils.getElementValueArray(
+                        annotation, diATF.bindValValueElement, String.class);
+                MethodInvocationNode namesClassNode =
+                    (MethodInvocationNode) methodInvocationNode.getArgument(0);
+                StringLiteralNode givenName = (StringLiteralNode) namesClassNode.getArgument(0);
 
-        accumulateBindAnnotatedWith(node, result, classNames.get(0), givenName.getValue());
+                accumulateBindAnnotatedWith(node, result, classNames.get(0), givenName.getValue());
+              }
+            });
       }
     }
 
