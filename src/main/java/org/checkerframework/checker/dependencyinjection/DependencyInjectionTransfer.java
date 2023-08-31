@@ -86,6 +86,11 @@ public class DependencyInjectionTransfer extends AccumulationTransfer {
 
     TransferResult<CFValue, CFStore> result = super.visitAssignment(node, input);
 
+    if (!diATF.isBindMethod(node.getExpression().getTree())
+        && !diATF.isAnnotatedWithMethod(node.getExpression().getTree())) {
+      return result;
+    }
+
     CFValue value =
         diATF.getStoreBefore(node).getValue(JavaExpression.fromNode(node.getExpression()));
 
