@@ -288,13 +288,13 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   /**
    * Invoked when the annotation of the receiver to the {@code toInstance} method is {@code Bind}
    *
-   * @param bindAnno the {@code Bind} annotation
+   * @param bawAnno the {@code Bind} annotation
    * @param toInstanceMethodArgumentNode the argument to the {@code toInstance} method
    */
-  private void handleBindAnnotation(AnnotationMirror bindAnno, Node toInstanceMethodArgumentNode) {
+  private void handleBindAnnotation(AnnotationMirror bawAnno, Node toInstanceMethodArgumentNode) {
 
     List<String> boundClassNames =
-        AnnotationUtils.getElementValueArray(bindAnno, bindValValueElement, String.class);
+        AnnotationUtils.getElementValueArray(bawAnno, bindValValueElement, String.class);
 
     boundClassNames.forEach(
         boundClassName -> {
