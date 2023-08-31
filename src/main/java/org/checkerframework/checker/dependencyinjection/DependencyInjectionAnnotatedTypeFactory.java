@@ -41,6 +41,7 @@ import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
 import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
 import org.checkerframework.javacutil.AnnotationBuilder;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
@@ -335,16 +336,19 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
     CFValue value = this.getStoreBefore(currentNode).getValue(JavaExpression.fromNode(receiver));
     System.out.printf("Value: %s\n", value);
 
-    AnnotationMirror receiverAnnotation = null;
+    CFValue value = this.getStoreBefore(currentNode).getValue(JavaExpression.fromNode(receiver));
 
     if (value != null && !value.getAnnotations().isEmpty()) {
-      receiverAnnotation = value.getAnnotations().first();
-
-      if (AnnotationUtils.areSameByName(receiverAnnotation, BindAnnotatedWith.NAME)) {
-        handleBAWAnnotation(receiverAnnotation, toInstanceMethodArgumentNode);
-      } else if (AnnotationUtils.areSameByName(receiverAnnotation, Bind.NAME)) {
-        handleBindAnnotation(receiverAnnotation, toInstanceMethodArgumentNode);
-      }
+      AnnotationMirrorSet annotations = value.getAnnotations();
+      System.out.printf("Annotations: %s\n\n", annotations);
+      annotations.forEach(
+          (annotation) -> {
+            if (AnnotationUtils.areSameByName(annotation, BindAnnotatedWith.NAME)) {
+              handleBAWAnnotation(annotation, toInstanceMethodArgumentNode);
+            } else if (AnnotationUtils.areSameByName(annotation, Bind.NAME)) {
+              handleBindAnnotation(annotation, toInstanceMethodArgumentNode);
+            }
+          });
     }
   }
 
