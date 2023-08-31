@@ -8,7 +8,7 @@ import org.checkerframework.common.reflection.ClassValChecker;
 import org.checkerframework.framework.qual.StubFiles;
 
 /** This is the entry point for pluggable type-checking. */
-@StubFiles({"Guice.astub", "AnnotatedBindingBuilder.astub"})
+@StubFiles({"Guice.astub"})
 public class DependencyInjectionChecker extends AccumulationChecker {
 
   public DependencyInjectionChecker() {}
