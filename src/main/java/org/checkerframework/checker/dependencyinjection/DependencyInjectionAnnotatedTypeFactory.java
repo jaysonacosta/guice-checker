@@ -260,6 +260,10 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
     List<String> annotatedNames =
         AnnotationUtils.getElementValueArray(bindAnno, bawAnnotatedWithValueElement, String.class);
 
+    if (annotatedNames.isEmpty()) {
+      throw new IllegalArgumentException("BindAnnotatedWith annotation must have a value.");
+    }
+
     System.out.printf("boundClassNames: %s\n", boundClassNames);
     System.out.printf("annotatedNames: %s\n", annotatedNames);
     System.out.printf("toInstanceMethodArgumentNode: %s\n", toInstanceMethodArgumentNode);
