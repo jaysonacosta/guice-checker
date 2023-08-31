@@ -210,8 +210,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
     AnnotationMirror bindAnno = null;
     if (value != null && !value.getAnnotations().isEmpty()) {
       for (AnnotationMirror anno : value.getAnnotations()) {
-        if (AnnotationUtils.areSameByName(
-            anno, "org.checkerframework.checker.dependencyinjection.qual.Bind")) {
+        if (AnnotationUtils.areSameByName(anno, Bind.NAME)) {
           bindAnno = anno;
           break;
         }
