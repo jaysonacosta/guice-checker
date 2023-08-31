@@ -1,6 +1,6 @@
-package com.google.inject;
-
 import org.checkerframework.dataflow.qual.*;
+
+package com.google.inject;
 
 class AbstractModule {
     @Pure
@@ -11,3 +11,18 @@ class AbstractModule {
     protected <T> LinkedBindingBuilder<T> bind(Key<T> key);
 }
 
+package com.google.inject.binder;
+
+public interface AnnotatedBindingBuilder<T> extends LinkedBindingBuilder<T> {
+    @Pure
+    LinkedBindingBuilder<T> annotatedWith(Class<? extends Annotation> annotationType);
+    @Pure
+    LinkedBindingBuilder<T> annotatedWith(Annotation annotation);
+}
+
+package com.google.inject.name;
+
+public class Names {
+    @Pure
+    public static Named named(String name);
+}
