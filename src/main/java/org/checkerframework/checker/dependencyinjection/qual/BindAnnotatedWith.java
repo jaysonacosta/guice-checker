@@ -23,6 +23,10 @@ public @interface BindAnnotatedWith {
    * Class names that have definitely been passed as an argument to a {@link
    * com.google.inject.Binder#bind()} call.
    *
+   * <p>The arguments are "fully qualified binary names" ({@link
+   * org.checkerframework.checker.signature.qual.FqBinaryName}): a primitive or <a
+   * href="https://docs.oracle.com/javase/specs/jls/se17/html/jls-13.html#jls-13.1">binary name</a>.
+   *
    * @return classes that have definitely been passed as an arugment to {@link
    *     com.google.inject.Binder#bind()}
    */
