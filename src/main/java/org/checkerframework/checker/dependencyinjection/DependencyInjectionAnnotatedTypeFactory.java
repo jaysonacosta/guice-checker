@@ -270,21 +270,19 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
     boundClassNames.forEach(
         boundClassName -> {
-          if (DependencyInjectionAnnotatedTypeFactory.knownBindings.containsKey(boundClassName)) {
-            DependencyInjectionAnnotatedTypeFactory.knownBindings.remove(boundClassName);
-            // Class that is being bound to - put in knownBindings
-            // <bound,boundTo>
-            TypeMirror boundToClassName = toInstanceMethodArgumentNode.getType();
+          DependencyInjectionAnnotatedTypeFactory.knownBindings.remove(boundClassName);
+          // Class that is being bound to - put in knownBindings
+          // <bound,boundTo>
+          TypeMirror boundToClassName = toInstanceMethodArgumentNode.getType();
 
-            KnownBindingsValue knowBindingValue =
-                KnownBindingsValue.builder()
-                    .className(boundToClassName.toString())
-                    .annotationName(annotatedNames.get(0))
-                    .build();
+          KnownBindingsValue knowBindingValue =
+              KnownBindingsValue.builder()
+                  .className(boundToClassName.toString())
+                  .annotationName(annotatedNames.get(0))
+                  .build();
 
-            DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
-                boundClassName, knowBindingValue);
-          }
+          DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
+              boundClassName, knowBindingValue);
         });
   }
 
@@ -301,16 +299,14 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
     boundClassNames.forEach(
         boundClassName -> {
-          if (DependencyInjectionAnnotatedTypeFactory.knownBindings.containsKey(boundClassName)) {
-            DependencyInjectionAnnotatedTypeFactory.knownBindings.remove(boundClassName);
-            // Class that is being bound to - put in knownBindings
-            // <bound,boundTo>
-            TypeMirror boundToClassName = toInstanceMethodArgumentNode.getType();
+          DependencyInjectionAnnotatedTypeFactory.knownBindings.remove(boundClassName);
+          // Class that is being bound to - put in knownBindings
+          // <bound,boundTo>
+          TypeMirror boundToClassName = toInstanceMethodArgumentNode.getType();
 
-            DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
-                boundClassName,
-                KnownBindingsValue.builder().className(boundToClassName.toString()).build());
-          }
+          DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
+              boundClassName,
+              KnownBindingsValue.builder().className(boundToClassName.toString()).build());
         });
   }
 
