@@ -250,16 +250,16 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
    * Invoked when the annotation of the receiver to the {@code toInstance} method is {@code
    * BindAnnotatedWith}
    *
-   * @param bindAnno the {@code BindAnnotatedWith} annotation
+   * @param bawAnno the {@code BindAnnotatedWith} annotation
    * @param toInstanceMethodArgumentNode the argument to the {@code toInstance} method
    */
-  private void handleBAWAnnotation(AnnotationMirror bindAnno, Node toInstanceMethodArgumentNode) {
+  private void handleBAWAnnotation(AnnotationMirror bawAnno, Node toInstanceMethodArgumentNode) {
 
     List<String> boundClassNames =
-        AnnotationUtils.getElementValueArray(bindAnno, bawValValueElement, String.class);
+        AnnotationUtils.getElementValueArray(bawAnno, bawValValueElement, String.class);
 
     List<String> annotatedNames =
-        AnnotationUtils.getElementValueArray(bindAnno, bawAnnotatedWithValueElement, String.class);
+        AnnotationUtils.getElementValueArray(bawAnno, bawAnnotatedWithValueElement, String.class);
 
     if (annotatedNames.isEmpty()) {
       throw new IllegalArgumentException("BindAnnotatedWith annotation must have a value.");
@@ -290,13 +290,13 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   /**
    * Invoked when the annotation of the receiver to the {@code toInstance} method is {@code Bind}
    *
-   * @param bawAnno the {@code Bind} annotation
+   * @param bindAnno the {@code Bind} annotation
    * @param toInstanceMethodArgumentNode the argument to the {@code toInstance} method
    */
-  private void handleBindAnnotation(AnnotationMirror bawAnno, Node toInstanceMethodArgumentNode) {
+  private void handleBindAnnotation(AnnotationMirror bindAnno, Node toInstanceMethodArgumentNode) {
 
     List<String> boundClassNames =
-        AnnotationUtils.getElementValueArray(bawAnno, bindValValueElement, String.class);
+        AnnotationUtils.getElementValueArray(bindAnno, bindValValueElement, String.class);
 
     boundClassNames.forEach(
         boundClassName -> {
@@ -333,8 +333,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
     Node receiver = methodAccessNode.getReceiver();
 
-    CFValue value = this.getStoreBefore(currentNode).getValue(JavaExpression.fromNode(receiver));
-    System.out.printf("Value: %s\n", value);
+    System.out.printf("Current receiver: %s\n", receiver);
 
     CFValue value = this.getStoreBefore(currentNode).getValue(JavaExpression.fromNode(receiver));
 
