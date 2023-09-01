@@ -9,7 +9,6 @@ import org.checkerframework.common.accumulation.AccumulationTransfer;
 import org.checkerframework.common.reflection.ClassValChecker;
 import org.checkerframework.dataflow.analysis.TransferInput;
 import org.checkerframework.dataflow.analysis.TransferResult;
-import org.checkerframework.dataflow.cfg.node.AssignmentNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.node.StringLiteralNode;
@@ -74,42 +73,6 @@ public class DependencyInjectionTransfer extends AccumulationTransfer {
                 accumulateBindAnnotatedWith(node, result, classNames.get(0), givenName.getValue());
               }
             });
-      }
-    }
-
-    return result;
-  }
-
-  @Override
-  public TransferResult<CFValue, CFStore> visitAssignment(
-      AssignmentNode node, TransferInput<CFValue, CFStore> input) {
-
-    TransferResult<CFValue, CFStore> result = super.visitAssignment(node, input);
-
-    if (!diATF.isBindMethod(node.getExpression().getTree())
-        && !diATF.isAnnotatedWithMethod(node.getExpression().getTree())) {
-      return result;
-    }
-
-    CFValue value =
-        diATF.getStoreBefore(node).getValue(JavaExpression.fromNode(node.getExpression()));
-
-    if (value != null && !value.getAnnotations().isEmpty()) {
-      AnnotationMirror anno = value.getAnnotations().first();
-      if (diATF.isBindMethod(node.getExpression().getTree())) {
-        List<String> classNames =
-            AnnotationUtils.getElementValueArray(anno, diATF.bindValValueElement, String.class);
-
-        accumulate(node.getTarget(), result, classNames.get(0));
-      } else if (diATF.isAnnotatedWithMethod(node.getExpression().getTree())) {
-        List<String> classNames =
-            AnnotationUtils.getElementValueArray(anno, diATF.bawValValueElement, String.class);
-        List<String> annotationNames =
-            AnnotationUtils.getElementValueArray(
-                anno, diATF.bawAnnotatedWithValueElement, String.class);
-
-        accumulateBindAnnotatedWith(
-            node.getTarget(), result, classNames.get(0), annotationNames.get(0));
       }
     }
 
