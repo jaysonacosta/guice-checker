@@ -448,12 +448,8 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
     @Override
     public boolean isSubtype(final AnnotationMirror subAnno, final AnnotationMirror superAnno) {
 
-      if (AnnotationUtils.areSame(subAnno, top)) {
-        if (AnnotationUtils.areSame(superAnno, top)) {
-          return true;
-        }
-
-        return false;
+      if (AnnotationUtils.areSame(superAnno, top)) {
+        return true;
       }
 
       if (AnnotationUtils.areSame(subAnno, superAnno)) {
@@ -461,10 +457,6 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
       }
 
       if (AnnotationUtils.areSameByName(subAnno, BindAnnotatedWith.NAME)) {
-        if (AnnotationUtils.areSame(superAnno, top)) {
-          return true;
-        }
-
         return false;
       }
 
