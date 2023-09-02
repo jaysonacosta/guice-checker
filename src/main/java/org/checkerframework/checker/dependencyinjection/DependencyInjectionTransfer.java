@@ -86,13 +86,7 @@ public class DependencyInjectionTransfer extends AccumulationTransfer {
 
     AnnotationMirror newAnno = diATF.createBindAnnotatedWithAnnotation(value, name);
 
-    // TODO: insertValue not updating stores, insertValuePermitNondeterministic is
-    if (result.containsTwoStores()) {
-      result.getThenStore().insertValuePermitNondeterministic(target, newAnno);
-      result.getElseStore().insertValuePermitNondeterministic(target, newAnno);
-    } else {
-      result.getRegularStore().insertValuePermitNondeterministic(target, newAnno);
-    }
+    insertIntoStores(result, target, newAnno);
 
     Tree tree = node.getTree();
 
