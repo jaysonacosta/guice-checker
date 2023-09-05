@@ -1,7 +1,5 @@
 package org.checkerframework.checker.dependencyinjection;
 
-import com.sun.source.tree.MethodInvocationTree;
-import com.sun.source.tree.Tree;
 import java.util.List;
 import javax.lang.model.element.AnnotationMirror;
 import org.checkerframework.checker.dependencyinjection.qual.Bind;
@@ -87,14 +85,5 @@ public class DependencyInjectionTransfer extends AccumulationTransfer {
     AnnotationMirror newAnno = diATF.createBindAnnotatedWithAnnotation(value, name);
 
     insertIntoStores(result, target, newAnno);
-
-    Tree tree = node.getTree();
-
-    if (tree != null && tree.getKind() == Tree.Kind.METHOD_INVOCATION) {
-      Node receiver = ((MethodInvocationNode) node).getTarget().getReceiver();
-      if (receiver != null && diATF.returnsThis((MethodInvocationTree) tree)) {
-        accumulateBindAnnotatedWith(receiver, result, value, name);
-      }
-    }
   }
 }
