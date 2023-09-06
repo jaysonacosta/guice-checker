@@ -1,16 +1,13 @@
-# Dependency Injection Checker
+# Guice Checker
 
-A common problem when programming is TODO.
-This results in a run-time exception.
+One common challenge is dealing with dependencies and ensuring they are properly defined. Omitting or misconfiguring dependencies can lead to runtime errors, impacting the reliability and stability of code.
 
-The Dependency Injection Checker guarantees, at compile time, that your code will
-not suffer that run-time exception.
-
+The Guice Checker is a static analysis tool designed to address this issue by providing compile-time guarantees that your Guice dependency mappings are accurately defined.
 
 ## How to run the checker
 
 First, publish the checker to your local Maven repository by running
-`./gradlew publishToMavenLocal` in this repository.
+`./gradlew publishToMavenLocal` in this repositor               y.
 
 Then, if you use Gradle, add the following to the `build.gradle` file in
 the project you wish to type-check (using Maven is similar):
@@ -31,26 +28,21 @@ informing you of any potential errors related to TODO.
 
 ## How to specify your code
 
-At compile time, the Dependency InjectionChecker estimates what values the program
-may compute at run time.  It issues a warning if the program may TODO.
-It works via a technique called pluggable typechecking.
+At compile time, the Guice Checker estimates what bindings the program may compute at run time.  It issues a warning if the program attempts to request a binding that has not been properly defined or configured. It works via a technique called pluggable typechecking.
 
-You need to specify the contracts of methods and fields in your code --
-that is, their requirements and their guarantees.  The Dependency InjectionChecker
-ensures that your code is consistent with the contracts, and that the
-contracts guarantee that TODO.
+You specify your code by writing *qualifiers* such as `@BindBottom` on types, to indicate more precisely what values the type represents. Here are the type qualifiers that are supported by the Guice Checker:
 
-You specify your code by writing *qualifiers* such as `@DependencyInjectionBottom`
-on types, to indicate more precisely what values the type represents.
-Here are the type qualifiers that are supported by the Dependency InjectionChecker:
+`@Bind`
 
-`@DependencyInjectionUnknown`:
-The value might or might not be TODO. It is not safe to use for TODO.
-This is the default type, so programmers usually do not need to write it.
+- The value represents a class that has definitely been passed as an argument to a call to `com.google.inject.AbstractModule.bind`. It also represents the fact that no classes may have been passed to `bind`. This is the default type, so programmers usually do not need to write it.
 
-`@DependencyInjectionBottom`:
-The value is definitely TODO. It is safe to use for TODO.
+`@BindAnnotatedWith`
 
+- The value represents a class and annotation name that has definitely been passed as an arugment to a call to `com.google.inject.binder.AnnotatedBindingBuilder.annotatedWith` on an `AnnotatedBindingBuilder`. This value cannot be used on its own, meaning it is derived from the `@Bind` annotation. This is because the `.annotatedWith` is a method that is defined in the `AnnotatedBindingBuilder` class.
+
+`@BindBottom`
+
+-
 
 ## How to build the checker
 
