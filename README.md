@@ -6,56 +6,72 @@ The Guice Checker is a static analysis tool designed to address this issue by pr
 
 ## How to run the checker
 
-First, publish the checker to your local Maven repository by running
-`./gradlew publishToMavenLocal` in this repositor               y.
+First, build the checker by running `./gradlew clean build` and then publish the checker to your local Maven repository by running `./gradlew publishToMavenLocal` in this repository.
 
 Then, if you use Gradle, add the following to the `build.gradle` file in
 the project you wish to type-check (using Maven is similar):
 
 ```
-repositories {
-    mavenLocal()
-    mavenCentral()
+plugins {
+    id 'org.checkerframework' version '0.6.28'
+    ...
 }
+
+...
+
+apply plugin: 'org.checkerframework'
+checkerFramework {
+  checkers = [
+    'org.checkerframework.checker.dependencyinjection.DependencyInjectionChecker',
+  ]
+}
+
+...
+
 dependencies {
-    annotationProcessor 'org.checkerframework:dependencyinjection-checker:0.1-SNAPSHOT'
+    compileOnly 'org.checkerframework:dependencyinjection-checker-qual:0.1-SNAPSHOT'
+    testCompileOnly 'org.checkerframework:dependencyinjection-checker-qual:0.1-SNAPSHOT'
+    checkerFramework 'org.checkerframework:dependencyinjection-checker:0.1-SNAPSHOT'
+    ...
 }
 ```
 
-Now, when you build your project, the Dependency Injection Checker will also run,
-informing you of any potential errors related to TODO.
+Now, when you build your project, the Guice Checker will also run, informing you of any potential errors related to improperly defined or configured bindings.
 
 
 ## How to specify your code
 
 At compile time, the Guice Checker estimates what bindings the program may compute at run time.  It issues a warning if the program attempts to request a binding that has not been properly defined or configured. It works via a technique called pluggable typechecking.
 
-You specify your code by writing *qualifiers* such as `@BindBottom` on types, to indicate more precisely what values the type represents. Here are the type qualifiers that are supported by the Guice Checker:
+Most of the time, the Guice Checker will work automatically. However, sometimes you may need to write an annotation to specify dataflow that is relevant to Guice bindings, if it crosses procedure boundaries. You can achieve that with the following type annotations:
 
-`@Bind`
+`@Bind({})`
 
-- The value represents a class that has definitely been passed as an argument to a call to `com.google.inject.AbstractModule.bind`. It also represents the fact that no classes may have been passed to `bind`. This is the default type, so programmers usually do not need to write it.
+- The default qualifier of this system. If an expression's type has this qualifier, then the expression is not a call to `com.google.inject.AbstractModule.bind` and it's value represents the fact that no arguments have been passed to the invocation of the `bind` method. As it is the default type, programmers usually do not need to write it.
 
-`@BindAnnotatedWith`
+`@Bind({Baz.class})`
 
-- The value represents a class and annotation name that has definitely been passed as an arugment to a call to `com.google.inject.binder.AnnotatedBindingBuilder.annotatedWith` on an `AnnotatedBindingBuilder`. This value cannot be used on its own, meaning it is derived from the `@Bind` annotation. This is because the `.annotatedWith` is a method that is defined in the `AnnotatedBindingBuilder` class.
+- If an expression's type has this qualifier, then the expression is definitely a call to `com.google.inject.AbstractModule.bind` that received the argument `Baz.class` in an `AbstractModule`. It's value represents the argument that was passed to the invocation of the `bind` method.
 
-`@BindBottom`
+`@BindAnnotatedWith({})`
 
--
+- This qualifier cannot exist on its own. It is always a result of an `@Bind` and as such cannot be applied to an expression since it would mean that either a call to `bind` was made that received no arguments, _not possible_, or that no call to `bind` was ever made which would not be possible since `annotatedWith` is defined on the `AnnotatedBindingBuilder` class.
 
-## How to build the checker
+`@BindAnnotatedWith({Baz.class}, {"someName"})`
 
-Run these commands from the top-level directory.
+- If an expression's type has this qualifier, then the expression is definitely a call to `com.google.inject.binder.AnnotatedBindingBuilder.annotatedWith` on an `AnnotatedBindingBuilder` that received the argument `Baz.class` in an `AbstractModule`. It represents two values, the first one being the argument that was passed to the invocation of the `bind` method and the second being the argument that was passed to the invocation of the `annotatedWith` method. It is important to note that this qualifier is always a _supertype_ of `@Bind({Baz.class})` and a _subtype_ of `@Bind({})`. It can only ever contain the result of an `@Bind`, thus it cannot exist on its own.
 
-`./gradlew build`: build the checker
+### Qualifier Hierarchy
 
-`./gradlew publishToMavenLocal`: publish the checker to your local Maven repository.
-This is useful for testing before you publish it elsewhere, such as to Maven Central.
-
+```mermaid
+graph TD;
+    classDef node font-family: monospace;
+    A["@Bind({})=⊤"]---B["@BindAnnotatedWith({})"];
+    B["@BindAnnotatedWith({})"]---C["@BindAnnotatedWith({Baz.class}, {#quot;someName#quot;})"];
+    C["@BindAnnotatedWith({Baz.class}, {#quot;someName#quot;})"]---D["@Bind({Baz.class})"];
+    class A,B,C,D node;
+```
 
 ## More information
 
-The Dependency Injection Checker is built upon the Checker Framework.  Please see
-the [Checker Framework Manual](https://checkerframework.org/manual/) for
-more information about using pluggable type-checkers, including this one.
+The Guice Checker is built upon the Checker Framework. Please see the [Checker Framework Manual](https://checkerframework.org/manual/) for more information about using pluggable type-checkers, including this one.
