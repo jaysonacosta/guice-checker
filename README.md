@@ -1,6 +1,6 @@
 # Guice Checker
 
-One common challenge is dealing with dependencies and ensuring they are properly defined. Omitting or misconfiguring dependencies can lead to runtime errors, impacting the reliability and stability of code.
+A common challenge when building systems that use [Guice](https://github.com/google/guice) is dealing with dependencies and ensuring they are properly defined. Omitting or misconfiguring dependencies can lead to runtime errors, impacting the reliability and stability of code.
 
 The Guice Checker is a static analysis tool designed to address this issue by providing compile-time guarantees that your Guice dependency mappings are accurately defined.
 
@@ -9,7 +9,7 @@ The Guice Checker is a static analysis tool designed to address this issue by pr
 First, build the checker by running `./gradlew clean build` and then publish the checker to your local Maven repository by running `./gradlew publishToMavenLocal` in this repository.
 
 Then, if you use Gradle, add the following to the `build.gradle` file in
-the project you wish to type-check (using Maven is similar):
+the project you wish to type-check:
 
 ```
 plugins {
@@ -47,19 +47,19 @@ Most of the time, the Guice Checker will work automatically. However, sometimes 
 
 `@Bind({})`
 
-- The default qualifier of this system. If an expression's type has this qualifier, then the expression is not a call to `com.google.inject.AbstractModule.bind` and it's value represents the fact that no arguments have been passed to the invocation of the `bind` method. As it is the default type, programmers usually do not need to write it.
+- The default qualifier of this system. If an expression's type has this qualifier, then the expression's value may not result from a direct method invocation of `com.google.inject.AbstractModule.bind`. It implies that no arguments have been passed to the `bind` method. Since this is the default type, programmers usually do not need to write it.
 
 `@Bind({Baz.class})`
 
-- If an expression's type has this qualifier, then the expression is definitely a call to `com.google.inject.AbstractModule.bind` that received the argument `Baz.class` in an `AbstractModule`. It's value represents the argument that was passed to the invocation of the `bind` method.
-
-`@BindAnnotatedWith({})`
-
-- This qualifier cannot exist on its own. It is always a result of an `@Bind` and as such cannot be applied to an expression since it would mean that either a call to `bind` was made that received no arguments, _not possible_, or that no call to `bind` was ever made which would not be possible since `annotatedWith` is defined on the `AnnotatedBindingBuilder` class.
+- If an expression's type has this qualifier, then the expression's value was definitely the result of a direct method invocation of `com.google.inject.AbstractModule.bind` that received the argument `Baz.class` in an `AbstractModule`. It's value represents the argument that was passed to the invocation of the `bind` method.
 
 `@BindAnnotatedWith({Baz.class}, {"someName"})`
 
 - If an expression's type has this qualifier, then the expression is definitely a call to `com.google.inject.binder.AnnotatedBindingBuilder.annotatedWith` on an `AnnotatedBindingBuilder` that received the argument `Baz.class` in an `AbstractModule`. It represents two values, the first one being the argument that was passed to the invocation of the `bind` method and the second being the argument that was passed to the invocation of the `annotatedWith` method. It is important to note that this qualifier is always a _supertype_ of `@Bind({Baz.class})` and a _subtype_ of `@Bind({})`. It can only ever contain the result of an `@Bind`, thus it cannot exist on its own.
+
+`@BindAnnotatedWith({})`
+
+- This qualifier cannot exist on its own. It is always a result of an `@Bind` and as such cannot be applied to an expression since it would mean that either a call to `bind` was made that received no arguments, _not possible_, or that no call to `bind` was ever made which would not be possible since `annotatedWith` is defined on the `AnnotatedBindingBuilder` class.
 
 ### Qualifier Hierarchy
 
