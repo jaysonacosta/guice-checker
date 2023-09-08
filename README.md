@@ -13,8 +13,8 @@ the project you wish to type-check:
 
 ```
 plugins {
-    id 'org.checkerframework' version '0.6.28'
-    ...
+  id 'org.checkerframework' version '0.6.28'
+  ...
 }
 
 ...
