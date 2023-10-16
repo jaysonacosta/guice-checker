@@ -3,10 +3,12 @@ package org.checkerframework.checker.dependencyinjection;
 import java.util.List;
 import javax.lang.model.element.AnnotationMirror;
 import org.checkerframework.checker.dependencyinjection.qual.Bind;
+import org.checkerframework.checker.dependencyinjection.qual.BindAnnotatedWith;
 import org.checkerframework.common.accumulation.AccumulationTransfer;
 import org.checkerframework.common.reflection.ClassValChecker;
 import org.checkerframework.dataflow.analysis.TransferInput;
 import org.checkerframework.dataflow.analysis.TransferResult;
+import org.checkerframework.dataflow.cfg.node.AssignmentNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.node.StringLiteralNode;
@@ -72,6 +74,47 @@ public class DependencyInjectionTransfer extends AccumulationTransfer {
               }
             });
       }
+    }
+
+    return result;
+  }
+
+  @Override
+  public TransferResult<CFValue, CFStore> visitAssignment(
+      AssignmentNode node, TransferInput<CFValue, CFStore> input) {
+
+    TransferResult<CFValue, CFStore> result = super.visitAssignment(node, input);
+
+    if (!diATF.isBindMethod(node.getExpression().getTree())
+        && !diATF.isAnnotatedWithMethod(node.getExpression().getTree())) {
+      return result;
+    }
+
+    CFValue value =
+        diATF.getStoreBefore(node).getValue(JavaExpression.fromNode(node.getExpression()));
+
+    if (value != null && !value.getAnnotations().isEmpty()) {
+      AnnotationMirrorSet annotations = value.getAnnotations();
+      annotations.forEach(
+          annotation -> {
+            if (AnnotationUtils.areSameByName(annotation, Bind.NAME)) {
+              List<String> classNames =
+                  AnnotationUtils.getElementValueArray(
+                      annotation, diATF.bindValValueElement, String.class);
+
+              accumulate(node.getTarget(), result, classNames.toArray(new String[1]));
+            } else if (AnnotationUtils.areSameByName(annotation, BindAnnotatedWith.NAME)) {
+              List<String> classNames =
+                  AnnotationUtils.getElementValueArray(
+                      annotation, diATF.bawValValueElement, String.class);
+              List<String> annotationNames =
+                  AnnotationUtils.getElementValueArray(
+                      annotation, diATF.bawAnnotatedWithValueElement, String.class);
+
+              accumulateBindAnnotatedWith(
+                  node.getTarget(), result, classNames.get(0), annotationNames.get(0));
+            }
+          });
     }
 
     return result;
