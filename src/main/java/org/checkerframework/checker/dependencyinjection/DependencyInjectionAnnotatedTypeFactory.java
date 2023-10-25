@@ -196,15 +196,17 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
         });
   }
 
-  /* Invoked when the `MethodInvocationNode` is a call to `com.google.inject.binder.LinkedBindingBuilder.to`
-
-  * This method will attempt to find the class that is being bound and add it to the `knownBindings` map
-  * alongside the class that is being bound to
-  *
-  * @param currentNode the current node in the block
-  * @param methodAccessNode the method access node
-  * @param methodArgumentNode the argument to the `to` method
-  */
+  /**
+   * Invoked when a {@code MethodInvocationNode} is a call to {@code
+   * com.google.inject.binder.LinkedBindingBuilder.to}.
+   *
+   * <p>This method takes the argument of a {@code MethodInvocationNode}, a class, and binds it to
+   * an existing class in the {@code knownBindings} map.
+   *
+   * @param currentNode the current node in the block
+   * @param methodAccessNode the method access node (the {@code to} method)
+   * @param methodArgumentNode the argument to the {@code to} method
+   */
   private void handleToMethodInvocation(
       Node currentNode, MethodAccessNode methodAccessNode, Node methodArgumentNode) {
     Node receiver = methodAccessNode.getReceiver();
