@@ -39,7 +39,7 @@ dependencies {
 Now, when you build your project, the Guice Checker will also run, informing you of any potential errors related to improperly defined or configured bindings.
 
 
-## How to specify your code
+## How the tool works
 
 At compile time, the Guice Checker estimates what bindings the program may compute at run time.  It issues a warning if the program attempts to request a binding that has not been properly defined or configured. It works via a technique called pluggable typechecking.
 
@@ -47,15 +47,15 @@ Most of the time, the Guice Checker will work automatically. However, sometimes 
 
 `@Bind({})`
 
-- The default qualifier of this system. If an expression's type has this qualifier, then the expression's value may not result from a direct method invocation of `com.google.inject.AbstractModule.bind`. It implies that no arguments have been passed to the `bind` method. Since this is the default type, programmers usually do not need to write it.
+- The default qualifier of this system. If an expression's type has this qualifier, then the expression's value may not result from a method invocation of `com.google.inject.AbstractModule.bind`. It implies that no arguments have been passed to the `bind` method. Since this is the default type, programmers usually do not need to write it.
 
 `@Bind({Baz.class})`
 
-- If an expression's type has this qualifier, then the expression's value was definitely the result of a direct method invocation of `com.google.inject.AbstractModule.bind` that received the argument `Baz.class` in an `AbstractModule`. It's value represents the argument that was passed to the invocation of the `bind` method.
+- If an expression's type has this qualifier, then the expression's value was definitely the result of a method invocation of `com.google.inject.AbstractModule.bind` that received the argument `Baz.class` in an `AbstractModule`. Its value represents the argument that was passed to the invocation of the `bind` method.
 
 `@BindAnnotatedWith({Baz.class}, {"someName"})`
 
-- If an expression's type has this qualifier, then the expression is definitely a call to `com.google.inject.binder.AnnotatedBindingBuilder.annotatedWith` on an `AnnotatedBindingBuilder` that received the argument `Baz.class` in an `AbstractModule`. It represents two values, the first one being the argument that was passed to the invocation of the `bind` method and the second being the argument that was passed to the invocation of the `annotatedWith` method. It is important to note that this qualifier is always a _supertype_ of `@Bind({Baz.class})` and a _subtype_ of `@Bind({})`. It can only ever contain the result of an `@Bind`, thus it cannot exist on its own.
+- If an expression's type has this qualifier, then the expression is definitely a call to `com.google.inject.binder.AnnotatedBindingBuilder.annotatedWith` on an `AnnotatedBindingBuilder` that received the argument `Baz.class` in an `AbstractModule`. It represents two things, the first one being the argument that was passed to the invocation of the `bind` method and the second being the argument that was passed to the invocation of the `annotatedWith` method. It is important to note that this qualifier is always a _supertype_ of `@Bind({Baz.class})` and a _subtype_ of `@Bind({})`. It can only ever contain the result of an `@Bind`, thus it cannot exist on its own.
 
 `@BindAnnotatedWith({})`
 
