@@ -4,7 +4,7 @@ A common challenge when building systems that use [Guice](https://github.com/goo
 
 - [Guice Static Analysis](https://stackoverflow.com/questions/63446847/detect-all-injection-points-in-java-guice-via-static-code-analysis)
 - [Bug in Modules](https://stackoverflow.com/questions/10686360/guice-how-to-print-a-modules-bindings)
-- [Detecting Unused Bindings](https://stackoverflow.com/questions/63446847/detect-all-injection-points-in-java-guice-via-static-code-analysis)
+- [Detecting Unused Bindings](https://stackoverflow.com/questions/55230580/guice-detect-unused-bindings)
 
 The Guice Checker is a static analysis tool designed to address this issue by providing compile-time guarantees that your Guice dependency mappings are accurately defined.
 
