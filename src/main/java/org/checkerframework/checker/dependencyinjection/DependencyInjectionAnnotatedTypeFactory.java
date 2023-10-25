@@ -89,8 +89,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
     System.out.println();
   }
 
-  public DependencyInjectionAnnotatedTypeFactory(BaseTypeChecker c) {
-    super(c, Bind.class, BindBottom.class);
+  private void initializeMethodElements() {
     ProcessingEnvironment processingEnv = this.getProcessingEnv();
     this.bindMethods.add(
         TreeUtils.getMethod(
@@ -140,7 +139,11 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
             "annotatedWith",
             processingEnv,
             "java.lang.Class<? extends java.lang.annotation.Annotation>"));
+  }
 
+  public DependencyInjectionAnnotatedTypeFactory(BaseTypeChecker c) {
+    super(c, Bind.class, BindBottom.class);
+    this.initializeMethodElements();
     this.postInit();
   }
 
