@@ -50,7 +50,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
   ClassValAnnotatedTypeFactory classValATF = getTypeFactoryOfSubchecker(ClassValChecker.class);
 
-  static HashMap<String, KnownBindingsValue> knownBindings = new HashMap<>();
+  private static HashMap<String, KnownBindingsValue> knownBindings = new HashMap<>();
 
   /** The {@code com.google.inject.AbstractModule.bind(Class<Baz> clazz)} method */
   private final List<ExecutableElement> bindMethods = new ArrayList<>(3);
