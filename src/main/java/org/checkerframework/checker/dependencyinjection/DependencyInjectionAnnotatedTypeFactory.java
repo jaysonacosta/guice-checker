@@ -173,12 +173,13 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
         methodTree, this.annotatedWithMethods, this.getProcessingEnv());
   }
 
-  /* Invoked when the `MethodInvocationNode` is a call to `com.google.inject.AbstractModule.bind`
-
-  * This method will add the bound class to the `knownBindings` map
-  *
-  * @param methodArgumentNode the argument to the `bind` method
-  */
+  /**
+   * Invoked when a {@code MethodInvocationNode} is a call to {@code
+   * com.google.inject.AbstractModule.bind}. This method takes the argument of a {@code
+   * MethodInvocationNode}, a class, and adds the bound class to the {@code knownBindings} map.
+   *
+   * @param methodArgumentNode the argument to the {@code bind} method
+   */
   private void handleBindMethodInvocation(Node methodArgumentNode) {
     // Class that is being bound - put in knownBindings
     AnnotatedTypeMirror boundClassTypeMirror =
