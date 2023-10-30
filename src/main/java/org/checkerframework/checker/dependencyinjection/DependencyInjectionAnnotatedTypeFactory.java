@@ -460,7 +460,6 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
         return true;
       }
 
-      // TODO: Do we want to return false if superAnno is BAW all the time?
       if (AnnotationUtils.areSameByName(subAnno, BindAnnotatedWith.NAME)
           || AnnotationUtils.areSameByName(superAnno, BindAnnotatedWith.NAME)) {
         return false;
