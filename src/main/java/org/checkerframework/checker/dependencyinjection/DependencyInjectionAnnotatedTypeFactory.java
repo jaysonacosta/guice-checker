@@ -47,6 +47,16 @@ import org.checkerframework.javacutil.TreeUtils;
 
 public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotatedTypeFactory {
 
+  /** The fully-qualified name of {@code AbstractModule} */
+  private final String abstractModuleName = "com.google.inject.AbstractModule";
+
+  /** The fully-qualified name of {@code LinkedBindingBuilder} */
+  private final String linkedBindingBuilderName = "com.google.inject.binder.LinkedBindingBuilder";
+
+  /** The fully-qualified name of {@code AnnotatedBindingBuilder} */
+  private final String annotatedBindingBuilderName =
+      "com.google.inject.binder.AnnotatedBindingBuilder";
+
   private static HashMap<String, KnownBindingsValue> knownBindings = new HashMap<>();
 
   /** The {@code com.google.inject.AbstractModule.bind(Class<Baz> clazz)} method */
@@ -89,50 +99,38 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   private void initializeMethodElements() {
     ProcessingEnvironment processingEnv = this.getProcessingEnv();
     this.bindMethods.add(
-        TreeUtils.getMethod(
-            "com.google.inject.AbstractModule", "bind", processingEnv, "com.google.inject.Key<T>"));
+        TreeUtils.getMethod(abstractModuleName, "bind", processingEnv, "com.google.inject.Key<T>"));
     this.bindMethods.add(
         TreeUtils.getMethod(
-            "com.google.inject.AbstractModule",
-            "bind",
-            processingEnv,
-            "com.google.inject.TypeLiteral<T>"));
+            abstractModuleName, "bind", processingEnv, "com.google.inject.TypeLiteral<T>"));
     this.bindMethods.add(
-        TreeUtils.getMethod(
-            "com.google.inject.AbstractModule", "bind", processingEnv, "java.lang.Class<T>"));
+        TreeUtils.getMethod(abstractModuleName, "bind", processingEnv, "java.lang.Class<T>"));
 
     this.toMethods.add(
         TreeUtils.getMethod(
-            "com.google.inject.binder.LinkedBindingBuilder",
-            "to",
-            processingEnv,
-            "java.lang.Class<? extends T>"));
+            linkedBindingBuilderName, "to", processingEnv, "java.lang.Class<? extends T>"));
     this.toMethods.add(
         TreeUtils.getMethod(
-            "com.google.inject.binder.LinkedBindingBuilder",
+            linkedBindingBuilderName,
             "to",
             processingEnv,
             "com.google.inject.TypeLiteral<? extends T>"));
     this.toMethods.add(
         TreeUtils.getMethod(
-            "com.google.inject.binder.LinkedBindingBuilder",
-            "to",
-            processingEnv,
-            "com.google.inject.Key<? extends T>"));
+            linkedBindingBuilderName, "to", processingEnv, "com.google.inject.Key<? extends T>"));
 
     this.toInstanceMethods.add(
-        TreeUtils.getMethod(
-            "com.google.inject.binder.LinkedBindingBuilder", "toInstance", processingEnv, "T"));
+        TreeUtils.getMethod(linkedBindingBuilderName, "toInstance", processingEnv, "T"));
 
     this.annotatedWithMethods.add(
         TreeUtils.getMethod(
-            "com.google.inject.binder.AnnotatedBindingBuilder",
+            annotatedBindingBuilderName,
             "annotatedWith",
             processingEnv,
             "java.lang.annotation.Annotation"));
     this.annotatedWithMethods.add(
         TreeUtils.getMethod(
-            "com.google.inject.binder.AnnotatedBindingBuilder",
+            annotatedBindingBuilderName,
             "annotatedWith",
             processingEnv,
             "java.lang.Class<? extends java.lang.annotation.Annotation>"));
