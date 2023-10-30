@@ -79,6 +79,20 @@ public class DependencyInjectionTransfer extends AccumulationTransfer {
     return result;
   }
 
+  /**
+   * TODO: Workaround for a known issue where the transfer function fails to propogate the Guice
+   * annotations from the right-hand side (rhs) to the left-hand side (lhs) of an assignment.
+   *
+   * <p>This method manually annotates the lhs of an assignment with the annotations from the rhs to
+   * temporarily fix the issue.
+   *
+   * <p>Attempts to resolve the issue included:
+   *
+   * <ol>
+   *   <li>Including the Guice methods in an astub file to indicate their determinism.
+   *   <li>Running the checker with the -AassumePure flag.
+   * </ol>
+   */
   @Override
   public TransferResult<CFValue, CFStore> visitAssignment(
       AssignmentNode node, TransferInput<CFValue, CFStore> input) {
