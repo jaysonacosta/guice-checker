@@ -25,7 +25,6 @@ import org.checkerframework.checker.dependencyinjection.utils.KnownBindingsValue
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.accumulation.AccumulationAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
-import org.checkerframework.common.reflection.ClassValAnnotatedTypeFactory;
 import org.checkerframework.common.reflection.ClassValChecker;
 import org.checkerframework.common.reflection.qual.ClassVal;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
@@ -47,8 +46,6 @@ import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
 
 public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotatedTypeFactory {
-
-  ClassValAnnotatedTypeFactory classValATF = getTypeFactoryOfSubchecker(ClassValChecker.class);
 
   private static HashMap<String, KnownBindingsValue> knownBindings = new HashMap<>();
 
@@ -183,7 +180,8 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   private void handleBindMethodInvocation(Node methodArgumentNode) {
     // Class that is being bound - put in knownBindings
     AnnotatedTypeMirror boundClassTypeMirror =
-        classValATF.getAnnotatedType(methodArgumentNode.getTree());
+        getTypeFactoryOfSubchecker(ClassValChecker.class)
+            .getAnnotatedType(methodArgumentNode.getTree());
 
     // TODO: getAnnotation may possibly return annotations that aren't @ClassVal
     List<String> classNames =
@@ -235,7 +233,8 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
               // Class that is being bound to - put in knownBindings
               // <bound,boundTo>
               AnnotatedTypeMirror boundToClassTypeMirror =
-                  classValATF.getAnnotatedType(methodArgumentNode.getTree());
+                  getTypeFactoryOfSubchecker(ClassValChecker.class)
+                      .getAnnotatedType(methodArgumentNode.getTree());
 
               List<String> boundToClassNames =
                   AnnotationUtils.getElementValueArray(
