@@ -86,6 +86,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   public final ExecutableElement bawAnnotatedWithValueElement =
       TreeUtils.getMethod(BindAnnotatedWith.class, "annotatedWith", 0, processingEnv);
 
+  /** Debugging method that pretty prints {@code knownBindings} */
   private void printKnownBindings() {
     System.out.println("Known Bindings:");
     DependencyInjectionAnnotatedTypeFactory.knownBindings.forEach(
