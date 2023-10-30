@@ -57,6 +57,10 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   private final String annotatedBindingBuilderName =
       "com.google.inject.binder.AnnotatedBindingBuilder";
 
+  /**
+   * The map of bindings that the program may compute at run time. If a dependency does not exist in
+   * this map, it has not been properly defined or configured.
+   */
   private static HashMap<String, KnownBindingsValue> knownBindings = new HashMap<>();
 
   /** The {@code com.google.inject.AbstractModule.bind(Class<Baz> clazz)} method */
@@ -65,9 +69,10 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   /** The {@code com.google.inject.binder.LinkedBindingBuilder.to(Class<? extends Baz> method */
   private final List<ExecutableElement> toMethods = new ArrayList<>(3);
 
-  /** The {@code com.google.inject.binder.LinkedBindingBuilder.toInstance() method */
+  /** The {@code com.google.inject.binder.LinkedBindingBuilder.toInstance()} method */
   private final List<ExecutableElement> toInstanceMethods = new ArrayList<>(1);
 
+  /** The {@code com.google.inject.binder.AnnotatedBindingBuilder.annotatedWith()} method */
   private final List<ExecutableElement> annotatedWithMethods = new ArrayList<>(2);
 
   /** The ClassVal.value argument/element. */
@@ -97,6 +102,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
     System.out.println();
   }
 
+  /** Helper method that initializes Guice method elements */
   private void initializeMethodElements() {
     ProcessingEnvironment processingEnv = this.getProcessingEnv();
     this.bindMethods.add(
