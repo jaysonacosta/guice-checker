@@ -63,6 +63,12 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
    */
   private static HashMap<String, KnownBindingsValue> knownBindings = new HashMap<>();
 
+  /**
+   * The map of dependencies that Guice must be able to satisfy. These dependencies are declared
+   * through annotations, such as {@code @Inject}, and must exist in {@code knownBindings}.
+   */
+  private static HashMap<String, Tree> dependencies = new HashMap<>();
+
   /** The {@code com.google.inject.AbstractModule.bind(Class<Baz> clazz)} method */
   private final List<ExecutableElement> bindMethods = new ArrayList<>(3);
 
@@ -100,6 +106,37 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
         });
 
     System.out.println();
+  }
+
+  /** Debugging method that pretty prints {@code knownBindings} */
+  private void printDependencies() {
+    System.out.println("Dependencies:");
+    DependencyInjectionAnnotatedTypeFactory.dependencies.forEach(
+        (key, value) -> {
+          System.out.print(String.format("<Key: %s, Value: %s>\n", key, value));
+        });
+
+    System.out.println();
+  }
+
+  /**
+   * Adds a dependency to the map of dependencies.
+   *
+   * @param key the fully qualified class name of the dependency
+   * @param value the value of the dependency as a tree
+   */
+  protected static void addDependency(String key, Tree value) {
+    DependencyInjectionAnnotatedTypeFactory.dependencies.put(key, value);
+  }
+
+  /**
+   * Removes a dependency from the map of dependencies.
+   *
+   * @param key the fully qualified class name of the dependency
+   * @return the value of the dependency as a tree or null if the dependency does not exist
+   */
+  protected static Tree removeDependency(String key) {
+    return DependencyInjectionAnnotatedTypeFactory.dependencies.remove(key);
   }
 
   /** Helper method that initializes Guice method elements */
@@ -430,6 +467,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
       }
 
       printKnownBindings();
+      printDependencies();
       return super.visitMethod(tree, p);
     }
   }
