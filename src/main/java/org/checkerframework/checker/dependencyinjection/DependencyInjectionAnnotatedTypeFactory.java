@@ -275,10 +275,6 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
       throw new IllegalArgumentException("BindAnnotatedWith annotation must have a value.");
     }
 
-    System.out.printf("boundClassNames: %s\n", boundClassNames);
-    System.out.printf("annotatedNames: %s\n", annotatedNames);
-    System.out.printf("toInstanceMethodArgumentNode: %s\n", toInstanceMethodArgumentNode);
-
     boundClassNames.forEach(
         boundClassName -> {
           DependencyInjectionAnnotatedTypeFactory.knownBindings.remove(boundClassName);
@@ -339,17 +335,13 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   private void handleToInstanceMethodInvocation(
       Node currentNode, MethodAccessNode methodAccessNode, Node toInstanceMethodArgumentNode) {
 
-    System.out.printf("Current node: %s\n", currentNode);
-
     Node receiver = methodAccessNode.getReceiver();
-
-    System.out.printf("Current receiver: %s\n", receiver);
 
     CFValue value = this.getStoreBefore(currentNode).getValue(JavaExpression.fromNode(receiver));
 
     if (value != null && !value.getAnnotations().isEmpty()) {
       AnnotationMirrorSet annotations = value.getAnnotations();
-      System.out.printf("Annotations: %s\n\n", annotations);
+
       annotations.forEach(
           (annotation) -> {
             if (AnnotationUtils.areSameByName(annotation, BindAnnotatedWith.NAME)) {
