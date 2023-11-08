@@ -12,9 +12,11 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
@@ -58,10 +60,23 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
       "com.google.inject.binder.AnnotatedBindingBuilder";
 
   /**
-   * The map of bindings that the program may compute at run time. If a dependency does not exist in
-   * this map, it has not been properly defined or configured.
+   * The map of <a href="https://github.com/google/guice/wiki/Bindings#bindings">bindings</a> that
+   * the program may compute at run time. Bindings are configured in {@link
+   * com.google.inject.AbstractModule}. If a dependency does exist in this map, it has definitely
+   * been properly defined or configured. Otherwise, it may or may not have been properly defined or
+   * configured.
    */
   private static HashMap<String, KnownBindingsValue> knownBindings = new HashMap<>();
+
+  /**
+   * The map of <a href="https://github.com/google/guice/wiki/Injections#injection-points">injection
+   * points</a> that Guice must be able to satisfy. These injection points are declared through
+   * annotations such as {@link com.google.inject.Inject}.
+   *
+   * <p>The key is the fully-qualified class name of the dependency, and the value is the program
+   * element that will be used to report an error if the dependency has no corresponding binding.
+   */
+  private static HashMap<String, Element> injectionPoints = new HashMap<>();
 
   /** The {@code com.google.inject.AbstractModule.bind(Class<Baz> clazz)} method */
   private final List<ExecutableElement> bindMethods = new ArrayList<>(3);
@@ -91,15 +106,45 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   public final ExecutableElement bawAnnotatedWithValueElement =
       TreeUtils.getMethod(BindAnnotatedWith.class, "annotatedWith", 0, processingEnv);
 
-  /** Debugging method that pretty prints {@code knownBindings} */
-  private void printKnownBindings() {
-    System.out.println("Known Bindings:");
-    DependencyInjectionAnnotatedTypeFactory.knownBindings.forEach(
+  /** Debugging method that pretty prints a map */
+  private void printMap(Map<String, ?> map, String mapName) {
+    System.out.println(mapName);
+    map.forEach(
         (key, value) -> {
           System.out.print(String.format("<Key: %s, Value: %s>\n", key, value));
         });
-
     System.out.println();
+  }
+
+  /** Debugging method that pretty prints {@code knownBindings} */
+  private void printKnownBindings() {
+    printMap(DependencyInjectionAnnotatedTypeFactory.knownBindings, "knownBindings");
+  }
+
+  /** Debugging method that pretty prints {@code printDependencies} */
+  private void printDependencies() {
+    printMap(DependencyInjectionAnnotatedTypeFactory.injectionPoints, "injectionPoints");
+  }
+
+  /**
+   * Adds an injection point to the map of injection points.
+   *
+   * @param dependencyName the fully-qualified class name of the dependency
+   * @param reportingLocation the program element at which an error will be reported if this
+   *     injection point has no correspsonding binding
+   */
+  protected static void addInjectionPoint(String dependencyName, Element reportingLocation) {
+    DependencyInjectionAnnotatedTypeFactory.injectionPoints.put(dependencyName, reportingLocation);
+  }
+
+  /** Returns the map of known bindings. */
+  protected static Map<String, KnownBindingsValue> getKnownBindings() {
+    return Collections.unmodifiableMap(DependencyInjectionAnnotatedTypeFactory.knownBindings);
+  }
+
+  /** Returns the map of injection points. */
+  protected static Map<String, Element> getInjectionPoints() {
+    return Collections.unmodifiableMap(DependencyInjectionAnnotatedTypeFactory.injectionPoints);
   }
 
   /** Helper method that initializes Guice method elements */
@@ -430,6 +475,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
       }
 
       printKnownBindings();
+      printDependencies();
       return super.visitMethod(tree, p);
     }
   }
