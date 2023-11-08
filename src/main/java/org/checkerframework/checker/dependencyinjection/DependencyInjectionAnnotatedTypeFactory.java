@@ -125,13 +125,14 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   }
 
   /**
-   * Adds a dependency to the map of dependencies.
+   * Adds an injection point to the map of injection points.
    *
-   * @param key the fully qualified class name of the dependency
-   * @param value the value of the dependency as an element
+   * @param dependencyName the fully-qualified class name of the dependency
+   * @param reportingLocation the program element at which an error will be reported if this
+   *     injection point has no correspsonding binding
    */
-  protected static void addInjectionPoint(String key, Element value) {
-    DependencyInjectionAnnotatedTypeFactory.injectionPoints.put(key, value);
+  protected static void addInjectionPoint(String dependencyName, Element reportingLocation) {
+    DependencyInjectionAnnotatedTypeFactory.injectionPoints.put(dependencyName, reportingLocation);
   }
 
   /** Returns the map of known bindings. */
