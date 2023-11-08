@@ -134,17 +134,6 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
     DependencyInjectionAnnotatedTypeFactory.injectionPoints.put(key, value);
   }
 
-  /**
-   * Removes an injection point from the map of injection points.
-   *
-   * @param key the fully qualified class name of the dependency to be injected
-   * @return the value of the dependency as an element or null if the dependency does not exist in
-   *     the map
-   */
-  protected static Element removeInjectionPoint(String key) {
-    return DependencyInjectionAnnotatedTypeFactory.injectionPoints.remove(key);
-  }
-
   /** Returns the map of known bindings. */
   protected static HashMap<String, KnownBindingsValue> getKnownBindings() {
     return DependencyInjectionAnnotatedTypeFactory.knownBindings;
