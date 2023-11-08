@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
@@ -66,10 +67,12 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   private static HashMap<String, KnownBindingsValue> knownBindings = new HashMap<>();
 
   /**
-   * The map of dependencies that Guice must be able to satisfy. These dependencies are declared
-   * through annotations, such as {@code @Inject}, and must exist in {@code knownBindings}.
+   * The map of <a href="https://github.com/google/guice/wiki/Injections#injection-points">injection
+   * points</a> that Guice must be able to satisfy. These injection points are declared through
+   * annotations, such as {@link com.google.inject.Inject}, and must exist in {@link
+   * #knownBindings}.
    */
-  private static HashMap<String, Tree> dependencies = new HashMap<>();
+  private static HashMap<String, Element> injectionPoints = new HashMap<>();
 
   /** The {@code com.google.inject.AbstractModule.bind(Class<Baz> clazz)} method */
   private final List<ExecutableElement> bindMethods = new ArrayList<>(3);
@@ -113,7 +116,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   /** Debugging method that pretty prints {@code knownBindings} */
   private void printDependencies() {
     System.out.println("Dependencies:");
-    DependencyInjectionAnnotatedTypeFactory.dependencies.forEach(
+    DependencyInjectionAnnotatedTypeFactory.injectionPoints.forEach(
         (key, value) -> {
           System.out.print(String.format("<Key: %s, Value: %s>\n", key, value));
         });
@@ -125,20 +128,31 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
    * Adds a dependency to the map of dependencies.
    *
    * @param key the fully qualified class name of the dependency
-   * @param value the value of the dependency as a tree
+   * @param value the value of the dependency as an element
    */
-  protected static void addDependency(String key, Tree value) {
-    DependencyInjectionAnnotatedTypeFactory.dependencies.put(key, value);
+  protected static void addDependency(String key, Element value) {
+    DependencyInjectionAnnotatedTypeFactory.injectionPoints.put(key, value);
   }
 
   /**
-   * Removes a dependency from the map of dependencies.
+   * Removes an injection point from the map of injection points.
    *
-   * @param key the fully qualified class name of the dependency
-   * @return the value of the dependency as a tree or null if the dependency does not exist
+   * @param key the fully qualified class name of the dependency to be injected
+   * @return the value of the dependency as an element or null if the dependency does not exist in
+   *     the map
    */
-  protected static Tree removeDependency(String key) {
-    return DependencyInjectionAnnotatedTypeFactory.dependencies.remove(key);
+  protected static Element removeInjectionPoint(String key) {
+    return DependencyInjectionAnnotatedTypeFactory.injectionPoints.remove(key);
+  }
+
+  /** Returns the map of known bindings. */
+  protected static HashMap<String, KnownBindingsValue> getKnownBindings() {
+    return DependencyInjectionAnnotatedTypeFactory.knownBindings;
+  }
+
+  /** Returns the map of injection points. */
+  protected static HashMap<String, Element> getInjectionPoints() {
+    return DependencyInjectionAnnotatedTypeFactory.injectionPoints;
   }
 
   /** Helper method that initializes Guice method elements */
@@ -468,8 +482,6 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
             KnownBindingsValue.builder().className(p.getUnderlyingType().toString()).build());
       }
 
-      printKnownBindings();
-      printDependencies();
       return super.visitMethod(tree, p);
     }
   }
