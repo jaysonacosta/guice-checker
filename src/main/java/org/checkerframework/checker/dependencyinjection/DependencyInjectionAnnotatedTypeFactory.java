@@ -58,8 +58,10 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
       "com.google.inject.binder.AnnotatedBindingBuilder";
 
   /**
-   * The map of bindings that the program may compute at run time. If a dependency does not exist in
-   * this map, it has not been properly defined or configured.
+   * The map of <a href="https://github.com/google/guice/wiki/Bindings#bindings">bindings</a> that
+   * the program may compute at run time. Bindings are configured in {@link
+   * com.google.inject.AbstractModule}. If a dependency does not exist in this map, it has not been
+   * properly defined or configured.
    */
   private static HashMap<String, KnownBindingsValue> knownBindings = new HashMap<>();
 
