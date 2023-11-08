@@ -69,8 +69,10 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   /**
    * The map of <a href="https://github.com/google/guice/wiki/Injections#injection-points">injection
    * points</a> that Guice must be able to satisfy. These injection points are declared through
-   * annotations, such as {@link com.google.inject.Inject}, and must exist in {@link
-   * #knownBindings}.
+   * annotations such as {@link com.google.inject.Inject}.
+   *
+   * <p>The key is the fully-qualified class name of the dependency, and the value is the program
+   * element that will be used to report an error if the dependency has no corresponding binding.
    */
   private static HashMap<String, Element> injectionPoints = new HashMap<>();
 
