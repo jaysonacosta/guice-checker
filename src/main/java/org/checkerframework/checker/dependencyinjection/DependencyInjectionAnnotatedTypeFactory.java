@@ -130,7 +130,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
    * @param key the fully qualified class name of the dependency
    * @param value the value of the dependency as an element
    */
-  protected static void addDependency(String key, Element value) {
+  protected static void addInjectionPoint(String key, Element value) {
     DependencyInjectionAnnotatedTypeFactory.injectionPoints.put(key, value);
   }
 
