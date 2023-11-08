@@ -28,7 +28,7 @@ public class DependencyInjectionVisitor extends AccumulationVisitor {
         this.getTypeFactory().getDeclAnnotation(element, com.google.inject.Inject.class);
 
     if (annotation != null) {
-      DependencyInjectionAnnotatedTypeFactory.addDependency(annotation.toString(), element);
+      DependencyInjectionAnnotatedTypeFactory.addInjectionPoint(annotation.toString(), element);
     }
     return super.visitMethod(tree, p);
   }
@@ -43,7 +43,8 @@ public class DependencyInjectionVisitor extends AccumulationVisitor {
     if (annotation != null) {
       TypeMirror elementTypeMirror = element.asType();
 
-      DependencyInjectionAnnotatedTypeFactory.addDependency(elementTypeMirror.toString(), element);
+      DependencyInjectionAnnotatedTypeFactory.addInjectionPoint(
+          elementTypeMirror.toString(), element);
     }
     return super.visitVariable(tree, p);
   }
