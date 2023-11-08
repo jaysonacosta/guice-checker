@@ -1,8 +1,11 @@
 package org.checkerframework.checker.dependencyinjection;
 
 import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.VariableTree;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeMirror;
 import org.checkerframework.common.accumulation.AccumulationVisitor;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.javacutil.TreeUtils;
@@ -28,5 +31,20 @@ public class DependencyInjectionVisitor extends AccumulationVisitor {
       DependencyInjectionAnnotatedTypeFactory.addDependency(annotation.toString(), tree);
     }
     return super.visitMethod(tree, p);
+  }
+
+  @Override
+  public Void visitVariable(VariableTree tree, Void p) {
+    VariableElement element = TreeUtils.elementFromDeclaration(tree);
+
+    AnnotationMirror annotation =
+        this.getTypeFactory().getDeclAnnotation(element, com.google.inject.Inject.class);
+
+    if (annotation != null) {
+      TypeMirror elementTypeMirror = element.asType();
+
+      DependencyInjectionAnnotatedTypeFactory.addDependency(elementTypeMirror.toString(), tree);
+    }
+    return super.visitVariable(tree, p);
   }
 }
