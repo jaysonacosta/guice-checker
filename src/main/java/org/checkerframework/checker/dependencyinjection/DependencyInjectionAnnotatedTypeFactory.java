@@ -106,26 +106,24 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   public final ExecutableElement bawAnnotatedWithValueElement =
       TreeUtils.getMethod(BindAnnotatedWith.class, "annotatedWith", 0, processingEnv);
 
-  /** Debugging method that pretty prints {@code knownBindings} */
-  private void printKnownBindings() {
-    System.out.println("Known Bindings:");
-    DependencyInjectionAnnotatedTypeFactory.knownBindings.forEach(
+  /** Debugging method that pretty prints a map */
+  private void printMap(Map<String, ?> map, String mapName) {
+    System.out.println(mapName);
+    map.forEach(
         (key, value) -> {
           System.out.print(String.format("<Key: %s, Value: %s>\n", key, value));
         });
-
     System.out.println();
   }
 
   /** Debugging method that pretty prints {@code knownBindings} */
-  private void printDependencies() {
-    System.out.println("Dependencies:");
-    DependencyInjectionAnnotatedTypeFactory.injectionPoints.forEach(
-        (key, value) -> {
-          System.out.print(String.format("<Key: %s, Value: %s>\n", key, value));
-        });
+  private void printKnownBindings() {
+    printMap(DependencyInjectionAnnotatedTypeFactory.knownBindings, "knownBindings");
+  }
 
-    System.out.println();
+  /** Debugging method that pretty prints {@code printDependencies} */
+  private void printDependencies() {
+    printMap(DependencyInjectionAnnotatedTypeFactory.injectionPoints, "injectionPoints");
   }
 
   /**
@@ -476,6 +474,8 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
             KnownBindingsValue.builder().className(p.getUnderlyingType().toString()).build());
       }
 
+      printKnownBindings();
+      printDependencies();
       return super.visitMethod(tree, p);
     }
   }
