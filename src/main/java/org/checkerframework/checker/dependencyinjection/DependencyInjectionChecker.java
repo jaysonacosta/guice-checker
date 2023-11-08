@@ -1,6 +1,9 @@
 package org.checkerframework.checker.dependencyinjection;
 
 import java.util.LinkedHashSet;
+import java.util.Map;
+import javax.lang.model.element.Element;
+import org.checkerframework.checker.dependencyinjection.utils.KnownBindingsValue;
 import org.checkerframework.common.accumulation.AccumulationChecker;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
@@ -25,5 +28,24 @@ public class DependencyInjectionChecker extends AccumulationChecker {
     checkers.add(ClassValChecker.class);
 
     return checkers;
+  }
+
+  @Override
+  public void typeProcessingOver() {
+    Map<String, KnownBindingsValue> knownBindings =
+        DependencyInjectionAnnotatedTypeFactory.getKnownBindings();
+    Map<String, Element> injectionPoints =
+        DependencyInjectionAnnotatedTypeFactory.getInjectionPoints();
+
+    injectionPoints
+        .entrySet()
+        .forEach(
+            (injectionPoint) -> {
+              if (!knownBindings.containsKey(injectionPoint.getKey())) {
+                reportError(
+                    injectionPoint.getValue(), "missing.implementation", injectionPoint.getKey());
+              }
+            });
+    super.typeProcessingOver();
   }
 }
