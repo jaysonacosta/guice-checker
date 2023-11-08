@@ -12,6 +12,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
@@ -139,13 +140,13 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   }
 
   /** Returns the map of known bindings. */
-  protected static HashMap<String, KnownBindingsValue> getKnownBindings() {
-    return DependencyInjectionAnnotatedTypeFactory.knownBindings;
+  protected static Map<String, KnownBindingsValue> getKnownBindings() {
+    return Collections.unmodifiableMap(DependencyInjectionAnnotatedTypeFactory.knownBindings);
   }
 
   /** Returns the map of injection points. */
-  protected static HashMap<String, Element> getInjectionPoints() {
-    return DependencyInjectionAnnotatedTypeFactory.injectionPoints;
+  protected static Map<String, Element> getInjectionPoints() {
+    return Collections.unmodifiableMap(DependencyInjectionAnnotatedTypeFactory.injectionPoints);
   }
 
   /** Helper method that initializes Guice method elements */
