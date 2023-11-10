@@ -2,10 +2,10 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Provides;
 import java.lang.annotation.Retention;
-import javax.inject.Inject;
 import javax.inject.Qualifier;
 import org.checkerframework.common.value.qual.*;
 
