@@ -34,6 +34,10 @@ public class DependencyInjectionChecker extends AccumulationChecker {
                     injectionPoint.getValue(), "missing.implementation", injectionPoint.getKey());
               }
             });
+
+    DependencyInjectionAnnotatedTypeFactory.printKnownBindings();
+    DependencyInjectionAnnotatedTypeFactory.printDependencies();
+
     super.typeProcessingOver();
   }
 }

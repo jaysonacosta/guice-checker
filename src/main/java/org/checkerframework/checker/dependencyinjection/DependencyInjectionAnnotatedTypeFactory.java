@@ -1,7 +1,5 @@
 package org.checkerframework.checker.dependencyinjection;
 
-import com.google.inject.Provides;
-import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
 import java.util.ArrayDeque;
@@ -36,15 +34,10 @@ import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.framework.flow.CFValue;
-import org.checkerframework.framework.type.AnnotatedTypeFactory;
-import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.QualifierHierarchy;
-import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
-import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
-import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypeKindUtils;
 
@@ -104,7 +97,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
       TreeUtils.getMethod(BindAnnotatedWith.class, "annotatedWith", 0, processingEnv);
 
   /** Debugging method that pretty prints a map */
-  private void printMap(Map<String, ?> map, String mapName) {
+  private static void printMap(Map<String, ?> map, String mapName) {
     System.out.println(mapName);
     map.forEach(
         (key, value) -> {
@@ -114,12 +107,12 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   }
 
   /** Debugging method that pretty prints {@code knownBindings} */
-  private void printKnownBindings() {
+  protected static void printKnownBindings() {
     printMap(DependencyInjectionAnnotatedTypeFactory.knownBindings, "knownBindings");
   }
 
   /** Debugging method that pretty prints {@code printDependencies} */
-  private void printDependencies() {
+  protected static void printDependencies() {
     printMap(DependencyInjectionAnnotatedTypeFactory.injectionPoints, "injectionPoints");
   }
 
@@ -132,6 +125,17 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
    */
   protected static void addInjectionPoint(String dependencyName, Element reportingLocation) {
     DependencyInjectionAnnotatedTypeFactory.injectionPoints.put(dependencyName, reportingLocation);
+  }
+
+  /**
+   * Adds a known binding to the map of known bindings.
+   *
+   * @param dependencyName the fully-qualified class name of the dependency
+   * @param knownBindingsValue the value of the known binding, containing the fully-qualified class
+   *     name of the class that the dependency is bound to and the optional annotation name
+   */
+  protected static void addBinding(String dependencyName, KnownBindingsValue knownBindingsValue) {
+    DependencyInjectionAnnotatedTypeFactory.knownBindings.put(dependencyName, knownBindingsValue);
   }
 
   /** Returns the map of known bindings. */
@@ -440,40 +444,6 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
     }
 
     super.postAnalyze(cfg);
-  }
-
-  @Override
-  public TreeAnnotator createTreeAnnotator() {
-    return new ListTreeAnnotator(
-        new DependencyInjectionTreeAnnotator(this), super.createTreeAnnotator());
-  }
-
-  public class DependencyInjectionTreeAnnotator extends TreeAnnotator {
-
-    /**
-     * Creates a ElementQualifierHierarchy from the given classes.
-     *
-     * @param qualifierClasses classes of annotations that are the qualifiers for this hierarchy
-     * @param elements element utils
-     */
-    public DependencyInjectionTreeAnnotator(AnnotatedTypeFactory annotatedTypeFactory) {
-      super(annotatedTypeFactory);
-    }
-
-    @Override
-    public Void visitMethod(MethodTree tree, AnnotatedTypeMirror p) {
-      ExecutableElement element = TreeUtils.elementFromDeclaration(tree);
-      if (ElementUtils.hasAnnotation(element, Provides.class.getName())) {
-        // TODO: Put fully qualified names of classes in knownBindings
-        knownBindings.put(
-            tree.getReturnType().toString(),
-            KnownBindingsValue.builder().className(p.getUnderlyingType().toString()).build());
-      }
-
-      printKnownBindings();
-      printDependencies();
-      return super.visitMethod(tree, p);
-    }
   }
 
   @Override
