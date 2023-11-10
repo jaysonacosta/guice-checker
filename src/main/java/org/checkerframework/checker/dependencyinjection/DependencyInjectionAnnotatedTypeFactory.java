@@ -18,6 +18,7 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import org.checkerframework.checker.dependencyinjection.qual.Bind;
@@ -46,6 +47,7 @@ import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypeKindUtils;
 
 public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotatedTypeFactory {
 
@@ -192,6 +194,19 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
     super(c, Bind.class, BindBottom.class);
     this.initializeMethodElements();
     this.postInit();
+  }
+
+  /**
+   * Returns the string representation of the given type mirror. If the type mirror is a primitive
+   * or boxed type, the string representation is the type kind. Otherwise, the string representation
+   * is the fully-qualified name of the type.
+   *
+   * @param elementTypeMirror the type mirror
+   * @return the string representation of the given type mirror
+   */
+  protected static String resolveInjectionPointString(TypeMirror elementTypeMirror) {
+    TypeKind injectionKind = TypeKindUtils.primitiveOrBoxedToTypeKind(elementTypeMirror);
+    return injectionKind != null ? injectionKind.toString() : elementTypeMirror.toString();
   }
 
   /* Returns true iff the argument is an invocation of AbstractModule.bind.
