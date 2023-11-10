@@ -28,10 +28,9 @@ import org.checkerframework.checker.dependencyinjection.utils.KnownBindingsValue
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.accumulation.AccumulationAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
-import org.checkerframework.common.reflection.ClassValChecker;
-import org.checkerframework.common.reflection.qual.ClassVal;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.block.Block;
+import org.checkerframework.dataflow.cfg.node.FieldAccessNode;
 import org.checkerframework.dataflow.cfg.node.MethodAccessNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
@@ -91,10 +90,6 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
   /** The {@code com.google.inject.binder.AnnotatedBindingBuilder.annotatedWith()} method */
   private final List<ExecutableElement> annotatedWithMethods = new ArrayList<>(2);
-
-  /** The ClassVal.value argument/element. */
-  public final ExecutableElement classValValueElement =
-      TreeUtils.getMethod(ClassVal.class, "value", 0, processingEnv);
 
   /** The Bind.value argument/element. */
   public final ExecutableElement bindValValueElement =
@@ -244,19 +239,11 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
    */
   private void handleBindMethodInvocation(Node methodArgumentNode) {
     // Class that is being bound - put in knownBindings
-    AnnotatedTypeMirror boundClassTypeMirror =
-        getTypeFactoryOfSubchecker(ClassValChecker.class)
-            .getAnnotatedType(methodArgumentNode.getTree());
+    Element bindMethodArgumentElement =
+        ((FieldAccessNode) methodArgumentNode).getElement().getEnclosingElement();
 
-    // TODO: getAnnotation may possibly return annotations that aren't @ClassVal
-    List<String> classNames =
-        AnnotationUtils.getElementValueArray(
-            boundClassTypeMirror.getAnnotation(), classValValueElement, String.class);
-
-    classNames.forEach(
-        className -> {
-          DependencyInjectionAnnotatedTypeFactory.knownBindings.put(className, null);
-        });
+    DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
+        resolveInjectionPointString(bindMethodArgumentElement.asType()), null);
   }
 
   /**
@@ -297,20 +284,14 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
               DependencyInjectionAnnotatedTypeFactory.knownBindings.remove(boundClassName);
               // Class that is being bound to - put in knownBindings
               // <bound,boundTo>
-              AnnotatedTypeMirror boundToClassTypeMirror =
-                  getTypeFactoryOfSubchecker(ClassValChecker.class)
-                      .getAnnotatedType(methodArgumentNode.getTree());
+              Element toMethodArgumentElement =
+                  ((FieldAccessNode) methodArgumentNode).getElement().getEnclosingElement();
 
-              List<String> boundToClassNames =
-                  AnnotationUtils.getElementValueArray(
-                      boundToClassTypeMirror.getAnnotation(), classValValueElement, String.class);
-
-              boundToClassNames.forEach(
-                  boundToClassName -> {
-                    DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
-                        boundClassName,
-                        KnownBindingsValue.builder().className(boundToClassName).build());
-                  });
+              DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
+                  boundClassName,
+                  KnownBindingsValue.builder()
+                      .className(resolveInjectionPointString(toMethodArgumentElement.asType()))
+                      .build());
             }
           });
     }
