@@ -2,14 +2,13 @@ package org.checkerframework.checker.dependencyinjection;
 
 import java.util.List;
 import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.Element;
 import org.checkerframework.checker.dependencyinjection.qual.Bind;
 import org.checkerframework.checker.dependencyinjection.qual.BindAnnotatedWith;
 import org.checkerframework.common.accumulation.AccumulationTransfer;
+import org.checkerframework.common.reflection.ClassValChecker;
 import org.checkerframework.dataflow.analysis.TransferInput;
 import org.checkerframework.dataflow.analysis.TransferResult;
 import org.checkerframework.dataflow.cfg.node.AssignmentNode;
-import org.checkerframework.dataflow.cfg.node.FieldAccessNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.node.StringLiteralNode;
@@ -17,6 +16,7 @@ import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
+import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
 
@@ -36,15 +36,18 @@ public class DependencyInjectionTransfer extends AccumulationTransfer {
     TransferResult<CFValue, CFStore> result = super.visitMethodInvocation(node, input);
 
     if (diATF.isBindMethod(node.getTree())) {
-      FieldAccessNode bindMethodArgumentNode = (FieldAccessNode) node.getArgument(0);
+      Node boundClass = node.getArgument(0);
 
-      Element bindMethodArgumentElement = bindMethodArgumentNode.getElement().getEnclosingElement();
+      AnnotatedTypeMirror boundClassTypeMirror =
+          this.diATF
+              .getTypeFactoryOfSubchecker(ClassValChecker.class)
+              .getAnnotatedType(boundClass.getTree());
 
-      accumulate(
-          node,
-          result,
-          DependencyInjectionAnnotatedTypeFactory.resolveInjectionPointString(
-              bindMethodArgumentElement.asType()));
+      List<String> classNames =
+          AnnotationUtils.getElementValueArray(
+              boundClassTypeMirror.getAnnotation(), diATF.classValValueElement, String.class);
+
+      accumulate(node, result, classNames.toArray(new String[1]));
 
     } else if (diATF.isAnnotatedWithMethod(node.getTree())) {
 

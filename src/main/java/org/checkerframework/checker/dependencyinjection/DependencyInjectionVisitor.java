@@ -59,9 +59,9 @@ public class DependencyInjectionVisitor extends AccumulationVisitor {
 
     if (annotation != null) {
       TypeMirror elementTypeMirror = element.asType();
+
       DependencyInjectionAnnotatedTypeFactory.addInjectionPoint(
-          DependencyInjectionAnnotatedTypeFactory.resolveInjectionPointString(elementTypeMirror),
-          element);
+          elementTypeMirror.toString(), element);
     }
     return super.visitVariable(tree, p);
   }
