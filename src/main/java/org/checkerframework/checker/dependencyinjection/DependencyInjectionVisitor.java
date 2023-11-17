@@ -34,13 +34,13 @@ public class DependencyInjectionVisitor extends AccumulationVisitor {
               param -> {
                 TypeMirror paramTypeMirror = param.asType();
                 DependencyInjectionAnnotatedTypeFactory.addInjectionPoint(
-                    DependencyInjectionAnnotatedTypeFactory.resolveInjectionPointString(
+                    DependencyInjectionAnnotatedTypeFactory.resolveInjectionPointClassName(
                         paramTypeMirror),
                     param);
               });
     } else if (ElementUtils.hasAnnotation(element, com.google.inject.Provides.class.getName())) {
       String resolvedTypeKindString =
-          DependencyInjectionAnnotatedTypeFactory.resolveInjectionPointString(
+          DependencyInjectionAnnotatedTypeFactory.resolveInjectionPointClassName(
               element.getReturnType());
 
       DependencyInjectionAnnotatedTypeFactory.addBinding(
@@ -61,7 +61,8 @@ public class DependencyInjectionVisitor extends AccumulationVisitor {
       TypeMirror elementTypeMirror = element.asType();
 
       DependencyInjectionAnnotatedTypeFactory.addInjectionPoint(
-          elementTypeMirror.toString(), element);
+          DependencyInjectionAnnotatedTypeFactory.resolveInjectionPointClassName(elementTypeMirror),
+          element);
     }
     return super.visitVariable(tree, p);
   }

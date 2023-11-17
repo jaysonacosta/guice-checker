@@ -209,9 +209,52 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
    * @param elementTypeMirror the type mirror
    * @return the string representation of the given type mirror
    */
-  protected static String resolveInjectionPointString(TypeMirror elementTypeMirror) {
+  protected static String resolveInjectionPointClassName(TypeMirror elementTypeMirror) {
     TypeKind injectionKind = TypeKindUtils.primitiveOrBoxedToTypeKind(elementTypeMirror);
     return injectionKind != null ? injectionKind.toString() : elementTypeMirror.toString();
+  }
+
+  /**
+   * Returns the resolved name of the given injection point class name. If the given injection point
+   * class name is a primitive or boxed type, the resolved name is the type kind. Otherwise, the
+   * resolved name is the given injection point class name.
+   *
+   * @param injectionClassName the fully-qualified class name of the injection point
+   * @return the resolved name of the given injection point class name
+   */
+  protected static String resolveInjectionPointClassName(String injectionClassName) {
+    String resolvedName;
+
+    switch (injectionClassName) {
+      case "java.lang.Byte":
+        resolvedName = TypeKind.BYTE.toString();
+        break;
+      case "java.lang.Boolean":
+        resolvedName = TypeKind.BOOLEAN.toString();
+        break;
+      case "java.lang.Character":
+        resolvedName = TypeKind.CHAR.toString();
+        break;
+      case "java.lang.Double":
+        resolvedName = TypeKind.DOUBLE.toString();
+        break;
+      case "java.lang.Float":
+        resolvedName = TypeKind.FLOAT.toString();
+        break;
+      case "java.lang.Integer":
+        resolvedName = TypeKind.INT.toString();
+        break;
+      case "java.lang.Long":
+        resolvedName = TypeKind.LONG.toString();
+        break;
+      case "java.lang.Short":
+        resolvedName = TypeKind.SHORT.toString();
+        break;
+      default:
+        resolvedName = injectionClassName;
+    }
+
+    return resolvedName;
   }
 
   /* Returns true iff the argument is an invocation of AbstractModule.bind.
@@ -313,7 +356,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
               boundToClassNames.forEach(
                   boundToClassName -> {
                     DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
-                        boundClassName,
+                        resolveInjectionPointClassName(boundClassName),
                         KnownBindingsValue.builder().className(boundToClassName).build());
                   });
             }
@@ -377,7 +420,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
           TypeMirror boundToClassName = toInstanceMethodArgumentNode.getType();
 
           DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
-              boundClassName,
+              resolveInjectionPointClassName(boundClassName),
               KnownBindingsValue.builder().className(boundToClassName.toString()).build());
         });
   }
