@@ -223,38 +223,26 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
    * @return the resolved name of the given injection point class name
    */
   protected static String resolveInjectionPointClassName(String injectionClassName) {
-    String resolvedName;
-
     switch (injectionClassName) {
       case "java.lang.Byte":
-        resolvedName = TypeKind.BYTE.toString();
-        break;
+        return TypeKind.BYTE.toString();
       case "java.lang.Boolean":
-        resolvedName = TypeKind.BOOLEAN.toString();
-        break;
+        return TypeKind.BOOLEAN.toString();
       case "java.lang.Character":
-        resolvedName = TypeKind.CHAR.toString();
-        break;
+        return TypeKind.CHAR.toString();
       case "java.lang.Double":
-        resolvedName = TypeKind.DOUBLE.toString();
-        break;
+        return TypeKind.DOUBLE.toString();
       case "java.lang.Float":
-        resolvedName = TypeKind.FLOAT.toString();
-        break;
+        return TypeKind.FLOAT.toString();
       case "java.lang.Integer":
-        resolvedName = TypeKind.INT.toString();
-        break;
+        return TypeKind.INT.toString();
       case "java.lang.Long":
-        resolvedName = TypeKind.LONG.toString();
-        break;
+        return TypeKind.LONG.toString();
       case "java.lang.Short":
-        resolvedName = TypeKind.SHORT.toString();
-        break;
+        return TypeKind.SHORT.toString();
       default:
-        resolvedName = injectionClassName;
+        return injectionClassName;
     }
-
-    return resolvedName;
   }
 
   /* Returns true iff the argument is an invocation of AbstractModule.bind.
