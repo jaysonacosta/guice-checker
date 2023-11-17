@@ -206,12 +206,12 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
    * or boxed type, the string representation is the type kind. Otherwise, the string representation
    * is the fully-qualified name of the type.
    *
-   * @param elementTypeMirror the type mirror
+   * @param typeMirror the type mirror
    * @return the string representation of the given type mirror
    */
-  protected static String resolveInjectionPointClassName(TypeMirror elementTypeMirror) {
-    TypeKind injectionKind = TypeKindUtils.primitiveOrBoxedToTypeKind(elementTypeMirror);
-    return injectionKind != null ? injectionKind.toString() : elementTypeMirror.toString();
+  protected static String resolveInjectionPointClassName(TypeMirror typeMirror) {
+    TypeKind injectionKind = TypeKindUtils.primitiveOrBoxedToTypeKind(typeMirror);
+    return injectionKind != null ? injectionKind.toString() : typeMirror.toString();
   }
 
   /**
