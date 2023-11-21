@@ -1,7 +1,5 @@
 package org.checkerframework.checker.dependencyinjection;
 
-import com.google.inject.Provides;
-import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
 import java.util.ArrayDeque;
@@ -18,6 +16,7 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import org.checkerframework.checker.dependencyinjection.qual.Bind;
@@ -36,16 +35,13 @@ import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.framework.flow.CFValue;
-import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.QualifierHierarchy;
-import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
-import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
-import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypeKindUtils;
 
 public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotatedTypeFactory {
 
@@ -107,7 +103,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
       TreeUtils.getMethod(BindAnnotatedWith.class, "annotatedWith", 0, processingEnv);
 
   /** Debugging method that pretty prints a map */
-  private void printMap(Map<String, ?> map, String mapName) {
+  private static void printMap(Map<String, ?> map, String mapName) {
     System.out.println(mapName);
     map.forEach(
         (key, value) -> {
@@ -117,12 +113,12 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   }
 
   /** Debugging method that pretty prints {@code knownBindings} */
-  private void printKnownBindings() {
+  protected static void printKnownBindings() {
     printMap(DependencyInjectionAnnotatedTypeFactory.knownBindings, "knownBindings");
   }
 
   /** Debugging method that pretty prints {@code printDependencies} */
-  private void printDependencies() {
+  protected static void printDependencies() {
     printMap(DependencyInjectionAnnotatedTypeFactory.injectionPoints, "injectionPoints");
   }
 
@@ -135,6 +131,17 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
    */
   protected static void addInjectionPoint(String dependencyName, Element reportingLocation) {
     DependencyInjectionAnnotatedTypeFactory.injectionPoints.put(dependencyName, reportingLocation);
+  }
+
+  /**
+   * Adds a known binding to the map of known bindings.
+   *
+   * @param dependencyName the fully-qualified class name of the dependency
+   * @param knownBindingsValue the value of the known binding, containing the fully-qualified class
+   *     name of the class that the dependency is bound to and the optional annotation name
+   */
+  protected static void addBinding(String dependencyName, KnownBindingsValue knownBindingsValue) {
+    DependencyInjectionAnnotatedTypeFactory.knownBindings.put(dependencyName, knownBindingsValue);
   }
 
   /** Returns the map of known bindings. */
@@ -192,6 +199,50 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
     super(c, Bind.class, BindBottom.class);
     this.initializeMethodElements();
     this.postInit();
+  }
+
+  /**
+   * Returns the string representation of the given type mirror. If the type mirror is a primitive
+   * or boxed type, the string representation is the type kind. Otherwise, the string representation
+   * is the fully-qualified name of the type.
+   *
+   * @param typeMirror the type mirror
+   * @return the string representation of the given type mirror
+   */
+  protected static String resolveInjectionPointClassName(TypeMirror typeMirror) {
+    TypeKind injectionKind = TypeKindUtils.primitiveOrBoxedToTypeKind(typeMirror);
+    return injectionKind != null ? injectionKind.toString() : typeMirror.toString();
+  }
+
+  /**
+   * Returns the resolved name of the given injection point class name. If the given injection point
+   * class name is a primitive or boxed type, the resolved name is the type kind. Otherwise, the
+   * resolved name is the given injection point class name.
+   *
+   * @param injectionClassName the fully-qualified class name of the injection point
+   * @return the resolved name of the given injection point class name
+   */
+  protected static String resolveInjectionPointClassName(String injectionClassName) {
+    switch (injectionClassName) {
+      case "java.lang.Byte":
+        return TypeKind.BYTE.toString();
+      case "java.lang.Boolean":
+        return TypeKind.BOOLEAN.toString();
+      case "java.lang.Character":
+        return TypeKind.CHAR.toString();
+      case "java.lang.Double":
+        return TypeKind.DOUBLE.toString();
+      case "java.lang.Float":
+        return TypeKind.FLOAT.toString();
+      case "java.lang.Integer":
+        return TypeKind.INT.toString();
+      case "java.lang.Long":
+        return TypeKind.LONG.toString();
+      case "java.lang.Short":
+        return TypeKind.SHORT.toString();
+      default:
+        return injectionClassName;
+    }
   }
 
   /* Returns true iff the argument is an invocation of AbstractModule.bind.
@@ -293,7 +344,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
               boundToClassNames.forEach(
                   boundToClassName -> {
                     DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
-                        boundClassName,
+                        resolveInjectionPointClassName(boundClassName),
                         KnownBindingsValue.builder().className(boundToClassName).build());
                   });
             }
@@ -357,7 +408,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
           TypeMirror boundToClassName = toInstanceMethodArgumentNode.getType();
 
           DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
-              boundClassName,
+              resolveInjectionPointClassName(boundClassName),
               KnownBindingsValue.builder().className(boundToClassName.toString()).build());
         });
   }
@@ -444,40 +495,6 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
     }
 
     super.postAnalyze(cfg);
-  }
-
-  @Override
-  public TreeAnnotator createTreeAnnotator() {
-    return new ListTreeAnnotator(
-        new DependencyInjectionTreeAnnotator(this), super.createTreeAnnotator());
-  }
-
-  public class DependencyInjectionTreeAnnotator extends TreeAnnotator {
-
-    /**
-     * Creates a ElementQualifierHierarchy from the given classes.
-     *
-     * @param qualifierClasses classes of annotations that are the qualifiers for this hierarchy
-     * @param elements element utils
-     */
-    public DependencyInjectionTreeAnnotator(AnnotatedTypeFactory annotatedTypeFactory) {
-      super(annotatedTypeFactory);
-    }
-
-    @Override
-    public Void visitMethod(MethodTree tree, AnnotatedTypeMirror p) {
-      ExecutableElement element = TreeUtils.elementFromDeclaration(tree);
-      if (ElementUtils.hasAnnotation(element, Provides.class.getName())) {
-        // TODO: Put fully qualified names of classes in knownBindings
-        knownBindings.put(
-            tree.getReturnType().toString(),
-            KnownBindingsValue.builder().className(p.getUnderlyingType().toString()).build());
-      }
-
-      printKnownBindings();
-      printDependencies();
-      return super.visitMethod(tree, p);
-    }
   }
 
   @Override
