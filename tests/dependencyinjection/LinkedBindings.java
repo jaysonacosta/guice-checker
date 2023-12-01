@@ -4,15 +4,20 @@ import com.google.inject.Injector;
 import com.google.inject.Provides;
 import org.checkerframework.common.value.qual.*;
 
+/**
+ * Linked bindings map a type to its implementation. {@link
+ * https://github.com/google/guice/wiki/LinkedBindings}
+ */
 public class LinkedBindings {
 
-  /** Guice module that provides bindings for message and count used in {@link Greeter}. */
-  static class BillingModule extends AbstractModule {
+  static class BillingModuleContainingBinding extends AbstractModule {
     @Provides
     TransactionLog provideTransactionLog(DatabaseTransactionLog impl) {
       return impl;
     }
   }
+
+  static class BillingModuleWithoutBinding extends AbstractModule {}
 
   interface TransactionLog {
     public void foo();
@@ -30,9 +35,18 @@ public class LinkedBindings {
      * instance. Most applications will call this method exactly once, in their
      * main() method.
      */
-    Injector injector = Guice.createInjector(new BillingModule());
+    Injector injectorWithBinding = Guice.createInjector(new BillingModuleContainingBinding());
+    Injector injectorWithoutBinding = Guice.createInjector(new BillingModuleWithoutBinding());
 
+    /*
+     * When you call injector.getInstance(TransactionLog.class), or when the injector
+     * encounters a dependency on TransactionLog, it will use a DatabaseTransactionLog.
+     */
     DatabaseTransactionLog baz =
-        (DatabaseTransactionLog) injector.getInstance(TransactionLog.class);
+        (DatabaseTransactionLog) injectorWithBinding.getInstance(TransactionLog.class);
+
+    // :: error: missing.implementation
+    DatabaseTransactionLog bar =
+        (DatabaseTransactionLog) injectorWithoutBinding.getInstance(TransactionLog.class);
   }
 }
