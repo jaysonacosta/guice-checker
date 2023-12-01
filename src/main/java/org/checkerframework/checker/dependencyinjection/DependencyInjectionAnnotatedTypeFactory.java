@@ -291,7 +291,8 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
     classNames.forEach(
         className -> {
-          DependencyInjectionAnnotatedTypeFactory.knownBindings.put(className, null);
+          DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
+              resolveInjectionPointClassName(className), null);
         });
   }
 

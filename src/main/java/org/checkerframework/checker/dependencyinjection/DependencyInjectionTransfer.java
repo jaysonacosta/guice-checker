@@ -47,7 +47,13 @@ public class DependencyInjectionTransfer extends AccumulationTransfer {
           AnnotationUtils.getElementValueArray(
               boundClassTypeMirror.getAnnotation(), diATF.classValValueElement, String.class);
 
-      accumulate(node, result, classNames.toArray(new String[1]));
+      classNames.forEach(
+          className ->
+              accumulate(
+                  node,
+                  result,
+                  DependencyInjectionAnnotatedTypeFactory.resolveInjectionPointClassName(
+                      className)));
 
     } else if (diATF.isAnnotatedWithMethod(node.getTree())) {
 
