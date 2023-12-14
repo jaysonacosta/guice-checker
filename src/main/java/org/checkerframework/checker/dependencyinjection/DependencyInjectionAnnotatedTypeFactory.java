@@ -1,6 +1,8 @@
 package org.checkerframework.checker.dependencyinjection;
 
+import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.Tree;
+import com.sun.source.util.TreePath;
 import java.lang.annotation.Annotation;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -16,6 +18,7 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
@@ -23,6 +26,7 @@ import org.checkerframework.checker.dependencyinjection.qual.Bind;
 import org.checkerframework.checker.dependencyinjection.qual.BindAnnotatedWith;
 import org.checkerframework.checker.dependencyinjection.qual.BindBottom;
 import org.checkerframework.checker.dependencyinjection.utils.KnownBindingsValue;
+import org.checkerframework.checker.dependencyinjection.utils.Module;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.accumulation.AccumulationAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -40,6 +44,7 @@ import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypeKindUtils;
 
@@ -56,13 +61,17 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
       "com.google.inject.binder.AnnotatedBindingBuilder";
 
   /**
-   * The map of <a href="https://github.com/google/guice/wiki/Bindings#bindings">bindings</a> that
-   * the program may compute at run time. Bindings are configured in {@link
-   * com.google.inject.AbstractModule}. If a dependency does exist in this map, it has definitely
-   * been properly defined or configured. Otherwise, it may or may not have been properly defined or
-   * configured.
+   * The map of <a
+   * href="https://google.github.io/guice/api-docs/7.0.0/javadoc/com/google/inject/AbstractModule.html">modules</a>,
+   * that may contain <a href="https://github.com/google/guice/wiki/Bindings#bindings">bindings</a>,
+   * that the program may compute at run time.
+   *
+   * <p>The key is the fully-qualified name of the module that has been defined in the program.
+   *
+   * <p>The value is the {@link Module} that represents the bindings that have been defined in the
+   * module.
    */
-  private static HashMap<String, KnownBindingsValue> knownBindings = new HashMap<>();
+  private static HashMap<String, Module> modules = new HashMap<>();
 
   /**
    * The map of <a href="https://github.com/google/guice/wiki/Injections#injection-points">injection
@@ -112,9 +121,9 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
     System.out.println();
   }
 
-  /** Debugging method that pretty prints {@code knownBindings} */
-  protected static void printKnownBindings() {
-    printMap(DependencyInjectionAnnotatedTypeFactory.knownBindings, "knownBindings");
+  /** Debugging method that pretty prints {@link #modules} */
+  protected static void printModules() {
+    printMap(DependencyInjectionAnnotatedTypeFactory.modules, "modules");
   }
 
   /** Debugging method that pretty prints {@code printDependencies} */
@@ -134,24 +143,43 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
   }
 
   /**
-   * Adds a known binding to the map of known bindings.
+   * Adds a module to the map of {@link #modules}.
    *
-   * @param dependencyName the fully-qualified class name of the dependency
-   * @param knownBindingsValue the value of the known binding, containing the fully-qualified class
-   *     name of the class that the dependency is bound to and the optional annotation name
+   * @param moduleName the fully-qualified class name of the module
+   * @param module the value of the module
    */
-  protected static void addBinding(String dependencyName, KnownBindingsValue knownBindingsValue) {
-    DependencyInjectionAnnotatedTypeFactory.knownBindings.put(dependencyName, knownBindingsValue);
+  public static void addModule(String moduleName, Module module) {
+    DependencyInjectionAnnotatedTypeFactory.modules.put(moduleName, module);
   }
 
-  /** Returns the map of known bindings. */
-  protected static Map<String, KnownBindingsValue> getKnownBindings() {
-    return Collections.unmodifiableMap(DependencyInjectionAnnotatedTypeFactory.knownBindings);
+  /**
+   * Returns the module with the given name.
+   *
+   * @param moduleName the fully-qualified class name of the module
+   * @return the module with the given name
+   */
+  public static Module getModule(String moduleName) {
+    return DependencyInjectionAnnotatedTypeFactory.modules.get(moduleName);
+  }
+
+  /** Returns the map of {@link #modules}. */
+  protected static Map<String, Module> getModules() {
+    return Collections.unmodifiableMap(DependencyInjectionAnnotatedTypeFactory.modules);
   }
 
   /** Returns the map of injection points. */
   protected static Map<String, Element> getInjectionPoints() {
     return Collections.unmodifiableMap(DependencyInjectionAnnotatedTypeFactory.injectionPoints);
+  }
+
+  /**
+   * Returns true iff the map of {@link #modules} contains a module with the given name.
+   *
+   * @param moduleName the fully-qualified class name of the module
+   * @return true iff the map of {@link #modules} contains a module with the given name
+   */
+  public static boolean containsModule(String moduleName) {
+    return DependencyInjectionAnnotatedTypeFactory.modules.containsKey(moduleName);
   }
 
   /** Helper method that initializes Guice method elements */
@@ -271,18 +299,32 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
         methodTree, this.annotatedWithMethods, this.getProcessingEnv());
   }
 
+  private String getEnclosingQualifiedClassName(Tree tree) {
+    TreePath currentPath = this.getPath(tree);
+    ClassTree enclosingClass = TreePathUtil.enclosingClass(currentPath);
+    TypeElement enclosingClassElement = TreeUtils.elementFromDeclaration(enclosingClass);
+    return enclosingClassElement.getQualifiedName().toString();
+  }
+
   /**
-   * Invoked when a {@code MethodInvocationNode} is a call to {@code
-   * com.google.inject.AbstractModule.bind}. This method takes the argument of a {@code
-   * MethodInvocationNode}, a class, and adds the bound class to the {@code knownBindings} map.
+   * Invoked when a {@link MethodInvocationNode} is a call to {@link
+   * com.google.inject.AbstractModule#bind}.
    *
-   * @param methodArgumentNode the argument to the {@code bind} method
+   * <p>This method takes the {@link MethodInvocationNode} and adds it's argument, the bound class,
+   * to it's corresponding {@code module} in the {@link #modules} map.
+   *
+   * @param methodInvocationNode the node for the {@link com.google.inject.AbstractModule#bind}
+   *     method invocation
    */
-  private void handleBindMethodInvocation(Node methodArgumentNode) {
+  private void handleBindMethodInvocation(MethodInvocationNode methodInvocationNode) {
+    Node methodArgumentNode = methodInvocationNode.getArgument(0);
     // Class that is being bound - put in knownBindings
     AnnotatedTypeMirror boundClassTypeMirror =
         getTypeFactoryOfSubchecker(ClassValChecker.class)
             .getAnnotatedType(methodArgumentNode.getTree());
+
+    String enclosingModuleQualifiedName =
+        getEnclosingQualifiedClassName(methodInvocationNode.getTree());
 
     // TODO: getAnnotation may possibly return annotations that aren't @ClassVal
     List<String> classNames =
@@ -291,28 +333,37 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
     classNames.forEach(
         className -> {
-          DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
-              resolveInjectionPointClassName(className), null);
+          if (!DependencyInjectionAnnotatedTypeFactory.containsModule(
+              enclosingModuleQualifiedName)) {
+            Module module = new Module();
+            module.addBinding(resolveInjectionPointClassName(className), null);
+            DependencyInjectionAnnotatedTypeFactory.addModule(enclosingModuleQualifiedName, module);
+          } else {
+            Module module =
+                DependencyInjectionAnnotatedTypeFactory.getModule(enclosingModuleQualifiedName);
+            module.addBinding(resolveInjectionPointClassName(className), null);
+          }
         });
   }
 
   /**
-   * Invoked when a {@code MethodInvocationNode} is a call to {@code
-   * com.google.inject.binder.LinkedBindingBuilder.to}.
+   * Invoked when a {@link MethodInvocationNode} is a call to {@link
+   * com.google.inject.binder.LinkedBindingBuilder#to}.
    *
-   * <p>This method takes the argument of a {@code MethodInvocationNode}, a class, and binds it to
-   * an existing class in the {@code knownBindings} map.
+   * <p>This method takes the {@link MethodInvocationNode} and binds it's argument, a class, to an
+   * existing class in its corresponding {@code module} in the {@link #modules} map.
    *
-   * @param currentNode the current node in the block
-   * @param methodAccessNode the method access node (the {@code to} method)
-   * @param methodArgumentNode the argument to the {@code to} method
+   * @param methodInvocationNode the node for the {@link
+   *     com.google.inject.binder.LinkedBindingBuilder#to} method invocation
    */
-  private void handleToMethodInvocation(
-      Node currentNode, MethodAccessNode methodAccessNode, Node methodArgumentNode) {
+  private void handleToMethodInvocation(MethodInvocationNode methodInvocationNode) {
+    MethodAccessNode methodAccessNode = methodInvocationNode.getTarget();
+    Node methodArgumentNode = methodInvocationNode.getArgument(0);
     Node receiver = methodAccessNode.getReceiver();
 
-    // Class that is being bound - should be in knownBindings
-    CFValue value = this.getStoreBefore(currentNode).getValue(JavaExpression.fromNode(receiver));
+    // Class that is being bound - should be in a module
+    CFValue value =
+        this.getStoreBefore(methodInvocationNode).getValue(JavaExpression.fromNode(receiver));
 
     AnnotationMirror bindAnno = null;
     if (value != null && !value.getAnnotations().isEmpty()) {
@@ -324,16 +375,22 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
       }
     }
 
+    String enclosingModuleQualifiedName =
+        getEnclosingQualifiedClassName(methodInvocationNode.getTree());
+
     if (bindAnno != null) {
       List<String> boundClassNames =
           AnnotationUtils.getElementValueArray(bindAnno, bindValValueElement, String.class);
 
       boundClassNames.forEach(
           boundClassName -> {
-            if (DependencyInjectionAnnotatedTypeFactory.knownBindings.containsKey(boundClassName)) {
-              DependencyInjectionAnnotatedTypeFactory.knownBindings.remove(boundClassName);
-              // Class that is being bound to - put in knownBindings
-              // <bound,boundTo>
+            if (DependencyInjectionAnnotatedTypeFactory.containsModule(
+                enclosingModuleQualifiedName)) {
+              Module module =
+                  DependencyInjectionAnnotatedTypeFactory.getModule(enclosingModuleQualifiedName);
+
+              module.removeBinding(boundClassName);
+
               AnnotatedTypeMirror boundToClassTypeMirror =
                   getTypeFactoryOfSubchecker(ClassValChecker.class)
                       .getAnnotatedType(methodArgumentNode.getTree());
@@ -344,7 +401,7 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
 
               boundToClassNames.forEach(
                   boundToClassName -> {
-                    DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
+                    module.addBinding(
                         resolveInjectionPointClassName(boundClassName),
                         KnownBindingsValue.builder().className(boundToClassName).build());
                   });
@@ -358,9 +415,11 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
    * BindAnnotatedWith}
    *
    * @param bawAnno the {@code BindAnnotatedWith} annotation
-   * @param toInstanceMethodArgumentNode the argument to the {@code toInstance} method
+   * @param methodInvocationNode the argument to the {@code toInstance} method
    */
-  private void handleBAWAnnotation(AnnotationMirror bawAnno, Node toInstanceMethodArgumentNode) {
+  private void handleBAWAnnotation(
+      AnnotationMirror bawAnno, MethodInvocationNode methodInvocationNode) {
+    Node methodArgumentNode = methodInvocationNode.getArgument(0);
 
     List<String> boundClassNames =
         AnnotationUtils.getElementValueArray(bawAnno, bawValValueElement, String.class);
@@ -372,21 +431,25 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
       throw new IllegalArgumentException("BindAnnotatedWith annotation must have a value.");
     }
 
+    String enclosingModuleQualifiedName =
+        getEnclosingQualifiedClassName(methodInvocationNode.getTree());
+
     boundClassNames.forEach(
         boundClassName -> {
-          DependencyInjectionAnnotatedTypeFactory.knownBindings.remove(boundClassName);
+          Module module =
+              DependencyInjectionAnnotatedTypeFactory.getModule(enclosingModuleQualifiedName);
+          module.removeBinding(boundClassName);
           // Class that is being bound to - put in knownBindings
           // <bound,boundTo>
-          TypeMirror boundToClassName = toInstanceMethodArgumentNode.getType();
+          TypeMirror boundToClassName = methodArgumentNode.getType();
 
           KnownBindingsValue knowBindingValue =
               KnownBindingsValue.builder()
-                  .className(boundToClassName.toString())
+                  .className(resolveInjectionPointClassName(boundToClassName))
                   .annotationName(annotatedNames.get(0))
                   .build();
 
-          DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
-              boundClassName, knowBindingValue);
+          module.addBinding(resolveInjectionPointClassName(boundClassName), knowBindingValue);
         });
   }
 
@@ -394,47 +457,53 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
    * Invoked when the annotation of the receiver to the {@code toInstance} method is {@code Bind}
    *
    * @param bindAnno the {@code Bind} annotation
-   * @param toInstanceMethodArgumentNode the argument to the {@code toInstance} method
+   * @param methodInvocationNode the argument to the {@code toInstance} method
    */
-  private void handleBindAnnotation(AnnotationMirror bindAnno, Node toInstanceMethodArgumentNode) {
+  private void handleBindAnnotation(
+      AnnotationMirror bindAnno, MethodInvocationNode methodInvocationNode) {
+    Node methodArgumentNode = methodInvocationNode.getArgument(0);
 
     List<String> boundClassNames =
         AnnotationUtils.getElementValueArray(bindAnno, bindValValueElement, String.class);
 
+    String enclosingModuleQualifiedName =
+        getEnclosingQualifiedClassName(methodInvocationNode.getTree());
+
     boundClassNames.forEach(
         boundClassName -> {
-          DependencyInjectionAnnotatedTypeFactory.knownBindings.remove(boundClassName);
+          Module module =
+              DependencyInjectionAnnotatedTypeFactory.getModule(enclosingModuleQualifiedName);
+          module.removeBinding(boundClassName);
           // Class that is being bound to - put in knownBindings
           // <bound,boundTo>
-          TypeMirror boundToClassName = toInstanceMethodArgumentNode.getType();
+          TypeMirror boundToClassName = methodArgumentNode.getType();
 
-          DependencyInjectionAnnotatedTypeFactory.knownBindings.put(
+          module.addBinding(
               resolveInjectionPointClassName(boundClassName),
               KnownBindingsValue.builder().className(boundToClassName.toString()).build());
         });
   }
 
   /**
-   * Invoked when the {@code MethodInvocationNode} is a call to {@code
-   * com.google.inject.binder.LinkedBindingBuilder.toInstance}
+   * Invoked when a {@link MethodInvocationNode} is a call to {@link
+   * com.google.inject.binder.LinkedBindingBuilder#toInstance}.
    *
-   * <p>This method will attempt to find the class that is being bound and add it to the {@code
-   * knownBindings} map alongside the class that is being bound to
+   * <p>This method will attempt to find the class that is being bound and add it to its
+   * corresponding module in the {@link #modules} map alongside the class that is being bound to.
    *
-   * <p>If the receiver is a call to {@code
-   * com.google.inject.binder.AnnotatedBindingBuilder.annotatedWith}, a call to {@code
+   * <p>If the receiver is a call to {@link
+   * com.google.inject.binder.AnnotatedBindingBuilder#annotatedWith}, a call to {@link
    * handleAnnotatedWithMethod} will be made
    *
-   * @param currentNode the current node in the block
-   * @param methodAccessNode the method access node
-   * @param toInstanceMethodArgumentNode the argument to the{@code to} method
+   * @param methodInvocationNode the node for the {@link
+   *     com.google.inject.binder.LinkedBindingBuilder#toInstance} method invocation
    */
-  private void handleToInstanceMethodInvocation(
-      Node currentNode, MethodAccessNode methodAccessNode, Node toInstanceMethodArgumentNode) {
-
+  private void handleToInstanceMethodInvocation(MethodInvocationNode methodInvocationNode) {
+    MethodAccessNode methodAccessNode = methodInvocationNode.getTarget();
     Node receiver = methodAccessNode.getReceiver();
 
-    CFValue value = this.getStoreBefore(currentNode).getValue(JavaExpression.fromNode(receiver));
+    CFValue value =
+        this.getStoreBefore(methodInvocationNode).getValue(JavaExpression.fromNode(receiver));
 
     if (value != null && !value.getAnnotations().isEmpty()) {
       AnnotationMirrorSet annotations = value.getAnnotations();
@@ -442,9 +511,9 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
       annotations.forEach(
           (annotation) -> {
             if (AnnotationUtils.areSameByName(annotation, BindAnnotatedWith.NAME)) {
-              handleBAWAnnotation(annotation, toInstanceMethodArgumentNode);
+              handleBAWAnnotation(annotation, methodInvocationNode);
             } else if (AnnotationUtils.areSameByName(annotation, Bind.NAME)) {
-              handleBindAnnotation(annotation, toInstanceMethodArgumentNode);
+              handleBindAnnotation(annotation, methodInvocationNode);
             }
           });
     }
@@ -470,15 +539,12 @@ public class DependencyInjectionAnnotatedTypeFactory extends AccumulationAnnotat
                   MethodInvocationNode methodInvocationNode = (MethodInvocationNode) node;
 
                   if (methodInvocationNode.getOperands().size() >= 2) {
-                    MethodAccessNode methodAccessNode = methodInvocationNode.getTarget();
-                    Node methodArgumentNode = methodInvocationNode.getArgument(0);
-
                     if (isBindMethod(methodInvocationNode.getTree())) {
-                      handleBindMethodInvocation(methodArgumentNode);
+                      handleBindMethodInvocation(methodInvocationNode);
                     } else if (isToMethod(methodInvocationNode.getTree())) {
-                      handleToMethodInvocation(node, methodAccessNode, methodArgumentNode);
+                      handleToMethodInvocation(methodInvocationNode);
                     } else if (isToInstanceMethod(methodInvocationNode.getTree())) {
-                      handleToInstanceMethodInvocation(node, methodAccessNode, methodArgumentNode);
+                      handleToInstanceMethodInvocation(methodInvocationNode);
                     }
                   }
                 }
