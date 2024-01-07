@@ -1,0 +1,26 @@
+import org.checkerframework.dataflow.qual.*;
+
+package com.google.inject;
+
+public final class Guice {
+    @Pure
+    public static Injector createInjector(Module... modules);
+    @Pure
+    public static Injector createInjector(Iterable<? extends Module> modules);
+    @Pure
+    public static Injector createInjector(Stage stage, Module... modules);
+    @Pure
+    public static Injector createInjector(Stage stage, Iterable<? extends Module> modules);
+}
+
+public interface Injector {
+    @Pure
+    void injectMembers(Object instance);
+}
+
+package com.google.inject.internal;
+
+public final class InternalInjectorCreator {
+    @Pure
+    public InternalInjectorCreator();
+}
