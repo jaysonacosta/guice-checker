@@ -38,6 +38,10 @@ public class DependencyInjectionTransfer extends AccumulationTransfer {
     if (diATF.isBindMethod(node.getTree())) {
       Node boundClass = node.getArgument(0);
 
+      System.out.println("DependencyInjectionTransfer.visitMethodInvocation()");
+      System.out.println(node);
+      System.out.println();
+
       AnnotatedTypeMirror boundClassTypeMirror =
           this.diATF
               .getTypeFactoryOfSubchecker(ClassValChecker.class)
@@ -48,12 +52,15 @@ public class DependencyInjectionTransfer extends AccumulationTransfer {
               boundClassTypeMirror.getAnnotation(), diATF.classValValueElement, String.class);
 
       classNames.forEach(
-          className ->
-              accumulate(
-                  node,
-                  result,
-                  DependencyInjectionAnnotatedTypeFactory.resolveInjectionPointClassName(
-                      className)));
+          className -> {
+            System.out.println(result);
+            System.out.println();
+            accumulate(
+                node,
+                result,
+                DependencyInjectionAnnotatedTypeFactory.resolveInjectionPointClassName(className));
+            System.out.println(result);
+          });
 
     } else if (diATF.isAnnotatedWithMethod(node.getTree())) {
 

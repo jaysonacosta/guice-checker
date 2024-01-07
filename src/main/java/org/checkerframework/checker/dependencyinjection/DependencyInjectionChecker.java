@@ -2,8 +2,8 @@ package org.checkerframework.checker.dependencyinjection;
 
 import java.util.LinkedHashSet;
 import java.util.Map;
-import javax.lang.model.element.Element;
-import org.checkerframework.checker.dependencyinjection.utils.KnownBindingsValue;
+import org.checkerframework.checker.caninject.CanInjectChecker;
+import org.checkerframework.checker.dependencyinjection.utils.Module;
 import org.checkerframework.common.accumulation.AccumulationChecker;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
@@ -26,29 +26,43 @@ public class DependencyInjectionChecker extends AccumulationChecker {
     LinkedHashSet<Class<? extends BaseTypeChecker>> checkers =
         super.getImmediateSubcheckerClasses();
     checkers.add(ClassValChecker.class);
+    checkers.add(CanInjectChecker.class);
 
     return checkers;
   }
 
   @Override
   public void typeProcessingOver() {
-    Map<String, KnownBindingsValue> knownBindings =
-        DependencyInjectionAnnotatedTypeFactory.getKnownBindings();
-    Map<String, Element> injectionPoints =
-        DependencyInjectionAnnotatedTypeFactory.getInjectionPoints();
+    Map<String, Module> modules = DependencyInjectionAnnotatedTypeFactory.getModules();
+    modules.forEach(
+        (moduleName, module) -> {
+          System.out.println(moduleName);
+          module
+              .getBindings()
+              .forEach(
+                  (dependencyName, knownBindingsValue) -> {
+                    System.out.println("\t" + dependencyName + " -> " + knownBindingsValue);
+                  });
+          System.out.println();
+        });
+    // Map<String, KnownBindingsValue> knownBindings =
+    //     DependencyInjectionAnnotatedTypeFactory.getModules();
+    // Map<String, Element> injectionPoints =
+    //     DependencyInjectionAnnotatedTypeFactory.getInjectionPoints();
 
-    injectionPoints
-        .entrySet()
-        .forEach(
-            (injectionPoint) -> {
-              if (!knownBindings.containsKey(injectionPoint.getKey())) {
-                reportError(
-                    injectionPoint.getValue(), "missing.implementation", injectionPoint.getKey());
-              }
-            });
+    // injectionPoints
+    //     .entrySet()
+    //     .forEach(
+    //         (injectionPoint) -> {
+    //           if (!knownBindings.containsKey(injectionPoint.getKey())) {
+    //             reportError(
+    //                 injectionPoint.getValue(), "missing.implementation",
+    // injectionPoint.getKey());
+    //           }
+    //         });
 
-    DependencyInjectionAnnotatedTypeFactory.printKnownBindings();
-    DependencyInjectionAnnotatedTypeFactory.printDependencies();
+    // DependencyInjectionAnnotatedTypeFactory.printKnownBindings();
+    // DependencyInjectionAnnotatedTypeFactory.printDependencies();
 
     super.typeProcessingOver();
   }
