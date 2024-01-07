@@ -7,6 +7,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.dependencyinjection.utils.KnownBindingsValue;
+import org.checkerframework.checker.dependencyinjection.utils.Module;
 import org.checkerframework.common.accumulation.AccumulationVisitor;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.javacutil.ElementUtils;
@@ -43,9 +44,21 @@ public class DependencyInjectionVisitor extends AccumulationVisitor {
           DependencyInjectionAnnotatedTypeFactory.resolveInjectionPointClassName(
               element.getReturnType());
 
-      DependencyInjectionAnnotatedTypeFactory.addBinding(
-          resolvedTypeKindString,
-          KnownBindingsValue.builder().className(resolvedTypeKindString).build());
+      String enclosingModuleQualifiedName = ElementUtils.getQualifiedClassName(element).toString();
+
+      if (!DependencyInjectionAnnotatedTypeFactory.containsModule(enclosingModuleQualifiedName)) {
+        Module module = new Module();
+        module.addBinding(
+            resolvedTypeKindString,
+            KnownBindingsValue.builder().className(resolvedTypeKindString).build());
+        DependencyInjectionAnnotatedTypeFactory.addModule(enclosingModuleQualifiedName, module);
+      } else {
+        Module module =
+            DependencyInjectionAnnotatedTypeFactory.getModule(enclosingModuleQualifiedName);
+        module.addBinding(
+            resolvedTypeKindString,
+            KnownBindingsValue.builder().className(resolvedTypeKindString).build());
+      }
     }
     return super.visitMethod(tree, p);
   }
